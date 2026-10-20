@@ -81,7 +81,7 @@ export async function openDefaultBranch(github: Client, id: string, branch: stri
   );
   const root = commit.commit.tree.sha === head.sha ? head : await github.json<Tree>(`${API}/repos/${id}/git/trees/${commit.sha}`);
   const paths: string[] = [];
-  for (const path of present) {
+  for (const path of SKILL_ROOTS) {
     const sha = await subtree(github, id, root, path);
     if (!sha) continue;
     const tree = await github.json<Tree>(`${API}/repos/${id}/git/trees/${sha}?recursive=1`);
