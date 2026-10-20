@@ -40,3 +40,16 @@ jobs:
           curl -fs http://127.0.0.1:4173/ | grep -q 'data-view="graph"'
           curl -fs "http://127.0.0.1:4173/api/scan?repo=./fixture" | grep -q '"name":"commits"'
           kill %1
+      # The demo in docs/demo as a test, in Chromium, on recorded data and bundled fonts.
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:browser
+      # Every run is recorded: the videos, and the report with them, pass or fail.
+      - name: Browser test videos
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: browser-tests
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 14

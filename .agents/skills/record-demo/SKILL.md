@@ -39,6 +39,11 @@ The scripts import `playwright` and `@xterm/xterm`, so run them from `/tmp/demo-
 
 ## 3a. A web page
 
+A page with a browser test in `tests/browser/` needs no scenario of its own: the test **is** the demo,
+on recorded data, in the same viewport and fonts on every machine, and every run records a video.
+Change the test, then `npm run test:browser` and take `test-results/<test>/video.webm` to step 4.
+New data for it: `node tests/browser/record.ts` (see its header). Otherwise:
+
 1. Start the app detached, on a **non-default port**, and note the PID:
    `nohup ./skill-atlas serve --port 4199 > /tmp/demo-rec/serve.log 2>&1 & echo $!`, as a shell call of its
    own: started in a subshell of a longer command, it dies with it. Ask the API once (`curl`) before

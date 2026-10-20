@@ -23,7 +23,9 @@ archived repositories and forks unless `--include-archived` / `--include-forks`;
 
 Set `GITHUB_TOKEN` for a higher GitHub rate limit; in the web view, and on the standalone page, the
 **GitHub token** field does the same, for that page only. `npm test` runs the tests; `npm run test:e2e` runs the
-CLI on real repositories at pinned commits (network, `GITHUB_TOKEN`).
+CLI on real repositories at pinned commits (network, `GITHUB_TOKEN`); `npm run test:browser` plays the
+search demo in Chromium on recorded data and records a video of every run in `test-results/`
+(once: `npx playwright install chromium`).
 
 - [spec/](spec/): what it does. [AGENTS.md](AGENTS.md): the definition of done.
 - [fixture/](fixture/README.md): a small repository for the tests.
