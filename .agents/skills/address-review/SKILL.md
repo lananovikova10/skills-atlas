@@ -12,6 +12,10 @@ issue, the review threads, and earlier replies. Rebuild context from there.
 Runs unattended. Never stop to ask the user. When something is unclear, reply
 on the thread asking the reviewer, and move on.
 
+Two actors may run this procedure on the same PR at the same time: the
+`address-review` automation and the polling loop in `issue-to-pr`. Step 2b
+makes sure each review comment is answered by exactly one of them.
+
 ## 1. Load the PR
 
 ```bash
@@ -48,16 +52,45 @@ query($owner:String!, $repo:String!, $pr:Int!) {
 }'
 ```
 
-Also read the **summary body** of the latest review (`reviews` from step 1).
-Findings listed there without a line are in scope too.
-
-**Work on a thread only if:**
+**A thread is a candidate only if:**
 - it is unresolved, and
-- the last comment is from the reviewer, not a reply from this skill
-  (replies carry the marker `<!-- address-review -->`).
+- its last comment does not contain the marker `<!-- address-review -->`.
 
-That makes re-runs safe: threads already answered are skipped until the
-reviewer responds again.
+Decide by the marker, not by author login: the reviewer, the agents and you
+may all post as the same account. Threads already answered are skipped until
+someone adds a new comment.
+
+**Review summary findings** (in a review's body, with no line) can't be
+claimed per comment. Handle them only when this run was triggered by that
+review, and only if no earlier summary comment contains
+`review=<review id>` (see step 9). The `issue-to-pr` polling loop skips them.
+
+## 2b. Claim each thread before working on it
+
+For every candidate thread, claim its **last** comment with a 👀 reaction:
+
+```bash
+gh api -i --method POST \
+  repos/{owner}/{repo}/pulls/comments/<last_comment_databaseId>/reactions \
+  -f content=eyes | head -1
+```
+
+- `201` → the claim is yours. Work on this thread.
+- `200` → someone else already claimed it. Skip the thread.
+
+GitHub creates a reaction only once per user and comment, so exactly one
+caller gets `201`. This relies on both actors using the same GitHub account.
+
+Claiming the last comment (not the first) means a reviewer's follow-up reply
+is a new comment and gets a new claim.
+
+**Stale claims.** If a 👀 on the last comment is older than 30 minutes
+(`created_at` from `GET …/reactions`) and there's still no marker reply,
+the run that claimed it died. Delete that reaction
+(`DELETE …/reactions/<reaction_id>`) and claim again with the POST above.
+
+**Every claimed thread gets a reply in step 8**, even when you end up blocked
+or can't push. A claim without a reply blocks the thread for 30 minutes.
 
 ## 3. Check the round limit
 
@@ -147,10 +180,11 @@ Don't resolve threads. The reviewer resolves them after verifying the fix.
 
 ## 9. Post a summary comment
 
-One top-level PR comment:
+Post one only if this run handled at least one thread or summary finding.
+Include `review=<id>` for each review summary you handled in step 2.
 
 ```markdown
-<!-- address-review:round -->
+<!-- address-review:round review=<id> -->
 ### Review addressed — round <n>
 
 **Fixed:** 4 · **Declined:** 1 · **Questions:** 1 · **Out of scope:** 1

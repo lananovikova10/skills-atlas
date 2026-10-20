@@ -108,10 +108,26 @@ Out-of-scope findings, follow-ups, pre-existing failures.
 
 Share the PR link, a one-line summary, and anything that needs a human decision.
 
+## 9. Feedback loop — poll for 60 minutes
+
+After opening the PR, poll it every 5 minutes for up to 60 minutes.
+Stop early if the PR is merged or closed.
+
+On each poll, follow `.agents/skills/address-review/SKILL.md` for this PR,
+steps 2–9, with these differences:
+- You already have the context and the branch checked out; skip step 1,
+  but `git pull` the PR branch first.
+- Skip review summary findings; only inline threads (they can be claimed).
+- Claim every thread with step 2b before touching it. Skip threads you
+  don't get a `201` for.
+- Address each thread in its own commit.
+
+When the 60 minutes end, stop. Unanswered comments are left to the
+address-review automation.
+
 ## Guardrails
 
 - Never push to the default branch or force-push a shared branch.
 - Never commit secrets, tokens or `.env` files.
 - Never merge the PR yourself.
-- If blocked (missing access, unclear spec, failing setup), stop and explain
-  rather than working around it.
+- If blocked (missing access, unclear spec, failing setup), stop and explain rather than working around it.
