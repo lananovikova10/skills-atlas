@@ -13,3 +13,4 @@ Integration tests for every case in the spec.
 ## Commands
 - `npm ci`: first, in a fresh checkout
 - `npm test`: the tests
+- `npm run test:browser`: the web view in Chromium (`npx playwright install chromium` once); a video of every run in `test-results/`
