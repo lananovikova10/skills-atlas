@@ -163,16 +163,22 @@ test('CLI: `updated YYYY-MM-DD` after each skill, `—` when unknown; the order 
 test('local git directory: `git log -1` up to HEAD, the latest across locations, with its commit', async (t) => {
   const copy = copyFixture(t);
   const result = await scan(await open(copy));
-  const dates = Object.fromEntries(result.skills.map((skill) => [skill.name, skill.lastUpdated]));
+  // git prints the same time as `+00:00` or `Z`, by version: the times are compared, not the text.
+  const dates = Object.fromEntries(
+    result.skills.map((skill) => [skill.name, skill.lastUpdated && { time: Date.parse(skill.lastUpdated.date), commit: skill.lastUpdated.commit }]),
+  );
+  const at = (date: string) => ({ time: Date.parse(date), commit: fixtureCommit(copy, date) });
   const first = '2026-01-05T10:00:00+00:00';
   assert.deepEqual(dates, {
-    'code-review': { date: '2026-02-10T16:45:00+01:00', commit: fixtureCommit(copy, '2026-02-10T16:45:00+01:00') },
-    'code-style': { date: first, commit: fixtureCommit(copy, first) },
+    'code-review': at('2026-02-10T16:45:00+01:00'),
+    'code-style': at(first),
     // .agents/skills/commits changed last: a copy, not the canonical file.
-    commits: { date: '2026-03-02T08:15:00+00:00', commit: fixtureCommit(copy, '2026-03-02T08:15:00+00:00') },
-    'release-checklist': { date: first, commit: fixtureCommit(copy, first) },
-    'writing-lint-checks': { date: first, commit: fixtureCommit(copy, first) },
+    commits: at('2026-03-02T08:15:00+00:00'),
+    'release-checklist': at(first),
+    'writing-lint-checks': at(first),
   });
+  // The committer's own offset is kept.
+  assert.match(result.skills.find((skill) => skill.name === 'code-review')!.lastUpdated!.date, /\+01:00$/);
   assert.ok(!result.warnings.some((warning) => warning.includes('last updated')));
 });
 
