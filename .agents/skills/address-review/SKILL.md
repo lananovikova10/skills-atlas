@@ -148,6 +148,17 @@ Run what CI runs: format/lint, type check, tests, build.
 - If you can't make the suite pass, don't push. Reply on the affected threads
   and post a summary comment explaining what's blocked.
 
+## 6b. Keep the demo in step with the code
+
+The PR's demo video (its Demo section, `docs/demo/`) must show what the code does now:
+
+- A fix that changes what the video shows (an output line, a label, a step), or a reviewer asking
+  for a demo: record it again with `.agents/skills/record-demo/SKILL.md`, in its own commit
+- A visible change with no demo and no reason in the PR: record one
+- A fix nobody can see: leave the video as it is
+- When it can't be recorded here (no network, no browser, no ffmpeg), don't block on it: say why in the
+  summary comment
+
 ## 7. Push
 
 ```bash
@@ -156,6 +167,10 @@ git push
 
 Push to the PR's own branch. Never force-push, never rebase, never push to
 the base branch.
+
+When the video changed, point the PR's Demo section at the pushed commit
+(`https://github.com/<owner>/<repo>/blob/<commit>/docs/demo/<feature>.mp4`) with `gh pr edit <number> --body-file <file>`,
+changing only that section.
 
 ## 8. Reply on every thread you handled
 
@@ -195,6 +210,7 @@ Include `review=<id>` for each review summary you handled in step 2.
 - Follow-up: caching between scans
 
 **Tests:** lint, types, unit, build — all passing locally.
+**Demo:** re-recorded in <sha> (the new warning line) · or unchanged · or not recorded: <why>.
 ```
 
 ## Guardrails

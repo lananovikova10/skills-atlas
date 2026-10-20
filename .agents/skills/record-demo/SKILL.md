@@ -1,6 +1,6 @@
 ---
 name: record-demo
-description: Record short demo videos of a feature — a web page driven by Playwright, or a CLI run captured from a real terminal and replayed — and save them as small MP4s in docs/demo/. Use when asked to record, film or make a video, screencast or demo of a feature.
+description: Record short demo videos of a feature — a web page driven by Playwright, or a CLI run captured from a real terminal and replayed — and save them as small MP4s in docs/demo/. Use when asked to record, film or make a video, screencast or demo of a feature, and before opening or updating a PR with a change a user can see.
 ---
 
 # Record a demo video
@@ -105,5 +105,8 @@ A few hundred KB each; over 2 MB, shorten the scenario.
 - `docs/demo/README.md`: one line per video: the command or page, the input, the steps shown, a link
   to the spec. For a replayed CLI run, say it is a real run replayed and that long waits are shortened
 - Link `docs/demo/` from the project README
-- Then the project's definition of done (AGENTS.md): tests pass, a PR, a green CI. In the PR say how
-  the videos were recorded
+- For a PR: commit the video on the PR branch (one per feature: a new recording replaces the old file),
+  push, then link it in the PR body's **Demo** section, pinned to the pushed commit:
+  `[<feature>.mp4](https://github.com/<owner>/<repo>/blob/<commit>/docs/demo/<feature>.mp4)` with what it
+  shows and how it was recorded. GitHub's API cannot upload a video into the PR body, so it is a link
+- Then the project's definition of done (AGENTS.md): tests pass, a PR, a green CI

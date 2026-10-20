@@ -6,6 +6,8 @@ Integration tests for every case in the spec.
 ## Definition of done
 - All tests pass locally
 - Open a PR when done
+- A change a user can see (the CLI's output, the web page): a short demo video in the PR, recorded with
+  [record-demo](.agents/skills/record-demo/SKILL.md); when one cannot be recorded, the PR says why
 - The CI build must be green
 
 ## Commands
