@@ -140,20 +140,36 @@ test('serve: a tree too large for one answer → the warning hints at a GitHub t
   ]);
 });
 
-test('standalone: the page\'s token goes to the API; the files come through the contents API, not raw', async () => {
+test('standalone: the page\'s token goes to the API; listed from the tree, files through the contents API, not raw', async () => {
   const { api, requests, authorizations } = standalone();
   const { status, body } = await api('https://github.com/JetBrains/example', 'ghp_page');
   assert.equal(status, 200);
   assert.deepEqual(body.skills.map((skill: { name: string }) => skill.name), ['commits']);
   assert.equal(body.skills[0].description, 'Write commit messages the way this repository does.');
   assert.deepEqual(authorizations(), ['Bearer ghp_page']);
-  assert.ok(requests.some((request) => request.url === SEARCH));
+  // A page cannot read code search's answer to a token: no Access-Control-Allow-Origin.
+  assert.ok(requests.some((request) => request.url === TREE));
+  assert.ok(!requests.some((request) => request.url.startsWith('https://api.github.com/search/')));
   assert.ok(!requests.some((request) => request.url.startsWith('https://raw.githubusercontent.com/')));
   assert.deepEqual(requests.find((request) => request.url === CONTENTS), {
     url: CONTENTS,
     authorization: 'Bearer ghp_page',
     accept: 'application/vnd.github.raw',
   });
+});
+
+test('standalone: a tree too large for one answer, with a token → the warning, without the code search hint', async () => {
+  const { api, requests } = standalone({
+    ...EXAMPLE,
+    [TREE]: { status: 200, body: { truncated: true, tree: [] } },
+    [`${REPO}/git/trees/${EXAMPLE_COMMIT}`]: { status: 200, body: { truncated: false, tree: [] } },
+  });
+  const { status, body } = await api('https://github.com/JetBrains/example', 'ghp_page');
+  assert.equal(status, 200);
+  assert.deepEqual(body.warnings, [
+    'the tree is too large to list at once; looked only in .claude/skills, .agents/skills, .github/skills, agent/skills',
+  ]);
+  assert.ok(!requests.some((request) => request.url.startsWith('https://api.github.com/search/')));
 });
 
 test('standalone: a Request with the header works the same', async () => {
