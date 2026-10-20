@@ -28,7 +28,16 @@
           <input id="repo" name="repo" type="text" autocomplete="off" spellcheck="false" required
             placeholder="https://github.com/owner/repo, …/tree/&lt;commit&gt;, or a local directory" />
         </label>
+        <label class="text-field token-field">
+          <span class="text-field-label">GitHub token</span>
+          <input id="token" name="token" type="password" autocomplete="off" spellcheck="false"
+            placeholder="Optional" aria-describedby="token-hint" />
+        </label>
         <button class="button filled" type="submit" id="analyse">Analyse</button>
+        <p class="token-hint" id="token-hint">
+          Optional: your own GitHub token raises GitHub's rate limit of 60 requests an hour. It is used only
+          to ask GitHub, kept in this page until it is reloaded or closed, and never put in the link.
+        </p>
       </form>
       <div class="progress" id="progress" hidden><div></div></div>
       <div class="banner error" id="error" role="alert" hidden></div>

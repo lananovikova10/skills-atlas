@@ -80,7 +80,10 @@ code, pre { font-family: 'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, mon
 main { max-width: 1280px; margin: 0 auto; padding: 24px; }
 .card { background: var(--surface-container-low); border-radius: var(--radius); box-shadow: var(--shadow-1); }
 
-.repo-form { display: flex; gap: 12px; align-items: center; padding: 16px; }
+.repo-form { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; padding: 16px; }
+.repo-form .text-field { min-width: 240px; }
+.repo-form .token-field { flex: 0 1 280px; }
+.token-hint { flex-basis: 100%; margin: 0; font-size: 12px; color: var(--on-surface-variant); }
 .text-field { position: relative; display: block; flex: 1; }
 .text-field-label {
   position: absolute; top: -8px; left: 12px; padding: 0 4px;
