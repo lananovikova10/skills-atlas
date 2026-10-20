@@ -22,6 +22,11 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
+      # The real CLI on real repositories, each at a pinned commit; the token raises GitHub's rate limit.
+      - name: End-to-end tests
+        run: npm run test:e2e
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
       # The real CLI on the fixture repository, as a user would run it: it must exit 0.
       - name: Smoke test
         run: |

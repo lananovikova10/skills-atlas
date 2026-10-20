@@ -1,6 +1,5 @@
-// The decisions in spec/analysis.md and spec/cli.md, checked on what the real command prints for
-// ./fixture and for a small GitHub repository answered in tests/helpers.ts. The edge cases of
-// where skills live are yours to add.
+// The decisions in spec/analysis.md, spec/cli.md and spec/edge-cases.md, checked on what the real
+// command prints for ./fixture and for a small GitHub repository answered in tests/helpers.ts.
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
@@ -8,9 +7,11 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { test } from 'node:test';
-import { openGitHub } from '../src/core/github.ts';
+import { findSkills } from '../src/core/find.ts';
+import { openGitHub, parseGitHubUrl } from '../src/core/github.ts';
 import { parseSkill } from '../src/core/parse.ts';
 import { replay } from '../src/core/replay.ts';
+import { scan } from '../src/core/scan.ts';
 import { atlas, CLI, EXAMPLE_COMMIT, FIXTURE } from './helpers.ts';
 
 const fixture = await atlas(['scan', FIXTURE]);
@@ -36,24 +37,102 @@ test('scan prints the repository, then each skill with its first sentence and pi
       `  https://github.com/JetBrains/example/blob/${EXAMPLE_COMMIT}/.claude/skills/commits/SKILL.md`,
     ].join('\n'),
   );
+  // Found by code search, but never read: there is no raw answer for it.
+  assert.equal(example.stderr, 'ignored: src/test/resources/skills/weather/SKILL.md: outside the skill roots');
 });
 
-test('./fixture: every skill, sorted by name, linked to its file, with a warning for the malformed one', () => {
+test('./fixture: every unique skill, sorted by name, linked to its file, copies after it', () => {
   const root = pathToFileURL(FIXTURE).href;
   assert.equal(fixture.code, 0);
   assert.equal(
     fixture.stdout,
     [
-      'fixture · 3 skills',
+      'fixture · 5 skills',
+      'code-review — Review a change before it is merged.',
+      `  ${root}/.claude/skills/reviewer/SKILL.md`,
       "code-style — Follow the project's code style.",
       `  ${root}/.github/skills/code-style/SKILL.md`,
       'commits — Write commit messages the way this repository does.',
       `  ${root}/.claude/skills/commits/SKILL.md`,
+      '  also in .agents/skills/commits/SKILL.md, .github/skills/Commits/SKILL.md',
       'release-checklist',
       `  ${root}/.agents/skills/release-checklist/SKILL.md`,
+      'writing-lint-checks — Write a lint check with its tests.',
+      `  ${root}/agent/skills/writing-lint-checks/SKILL.md`,
     ].join('\n'),
   );
-  assert.match(fixture.stderr, /^warning: \.agents\/skills\/release-checklist\/SKILL\.md: malformed front matter: /);
+  assert.match(fixture.stderr, /^warning: \.agents\/skills\/release-checklist\/SKILL\.md: malformed front matter: /m);
+});
+
+const stderr = fixture.stderr.split('\n');
+const stdout = fixture.stdout.split('\n');
+
+test('duplicate across roots → listed once, canonical .claude, the others as copies', () => {
+  assert.equal(stdout.filter((line) => line.startsWith('commits')).length, 1);
+  const at = stdout.indexOf('commits — Write commit messages the way this repository does.');
+  assert.equal(stdout[at + 1], `  ${pathToFileURL(FIXTURE).href}/.claude/skills/commits/SKILL.md`);
+  assert.equal(stdout[at + 2], '  also in .agents/skills/commits/SKILL.md, .github/skills/Commits/SKILL.md');
+});
+
+test('differing descriptions → a warning on the canonical file', () => {
+  assert.ok(stderr.includes('warning: .claude/skills/commits/SKILL.md: description differs in .github/skills/Commits/SKILL.md'));
+  // The same description in .agents is no warning.
+  assert.ok(!stderr.some((line) => line.includes('description differs') && line.includes('.agents/')));
+});
+
+test('agent/skills is a root', () => {
+  assert.ok(stdout.includes(`  ${pathToFileURL(FIXTURE).href}/agent/skills/writing-lint-checks/SKILL.md`));
+});
+
+test('product resources, test data, nested, too deep, wrong case → not listed, one ignored: line each', () => {
+  assert.deepEqual(
+    stderr.filter((line) => line.startsWith('ignored: ')),
+    [
+      'ignored: .claude/skills/group/inner/SKILL.md: nested too deep in .claude/skills',
+      'ignored: .claude/skills/lowercase/skill.md: not named SKILL.md',
+      'ignored: integration-tests/src/jvmTest/resources/skills/weather-retrieval/SKILL.md: outside the skill roots',
+      'ignored: plugins/mcp-tools/resources/skills/mps-aspect-generator/SKILL.md: outside the skill roots',
+      'ignored: plugins/x/.claude/skills/nested/SKILL.md: outside the skill roots',
+    ],
+  );
+  for (const name of ['mps-aspect-generator', 'weather-retrieval', 'nested', 'inner', 'lowercase']) {
+    assert.ok(!stdout.some((line) => line.startsWith(name)), name);
+  }
+  // After the warnings.
+  const lastWarning = stderr.findLastIndex((line) => line.startsWith('warning: '));
+  assert.ok(lastWarning < stderr.findIndex((line) => line.startsWith('ignored: ')));
+});
+
+test('front matter name ≠ directory → a warning, the front matter wins', () => {
+  assert.ok(
+    stderr.includes('warning: .claude/skills/reviewer/SKILL.md: name "code-review" differs from its directory "reviewer"; using "code-review"'),
+  );
+  assert.ok(stdout.includes('code-review — Review a change before it is merged.'));
+  assert.ok(!stdout.some((line) => line.startsWith('reviewer')));
+});
+
+test('findSkills: only <root>/<dir>/SKILL.md at the repository root, in root order', () => {
+  const { files, ignored } = findSkills([
+    'docs/.claude/skills/x/SKILL.md',
+    'SKILL.md',
+    '.claude/skills/SKILL.md',
+    'agent/skills/b/SKILL.md',
+    '.agents/skills/a/SKILL.md',
+    '.claude/skills/z/SKILL.md',
+    '.claude/skills/z/README.md',
+    '.github/skills/a/Skill.md',
+  ]);
+  assert.deepEqual(files, [
+    { path: '.claude/skills/z/SKILL.md', directory: 'z', rootIndex: 0 },
+    { path: '.agents/skills/a/SKILL.md', directory: 'a', rootIndex: 1 },
+    { path: 'agent/skills/b/SKILL.md', directory: 'b', rootIndex: 3 },
+  ]);
+  assert.deepEqual(ignored, [
+    { path: '.claude/skills/SKILL.md', reason: 'directly in .claude/skills, not in a skill directory' },
+    { path: '.github/skills/a/Skill.md', reason: 'not named SKILL.md' },
+    { path: 'SKILL.md', reason: 'outside the skill roots' },
+    { path: 'docs/.claude/skills/x/SKILL.md', reason: 'outside the skill roots' },
+  ]);
 });
 
 test('the CLI prints the result at once and stores nothing', (t) => {
@@ -90,5 +169,56 @@ test('rate limit → a message that asks for GITHUB_TOKEN', async () => {
   });
   await assert.rejects(openGitHub('https://github.com/JetBrains/MPS', { fetch: limited }), {
     message: 'GitHub rate limit reached; set GITHUB_TOKEN',
+  });
+});
+
+test('github.com/<owner>/<repo>/tree/<ref> pins the commit or branch to scan', () => {
+  assert.deepEqual(parseGitHubUrl('github.com/JetBrains/MPS'), { owner: 'JetBrains', repo: 'MPS' });
+  assert.deepEqual(parseGitHubUrl(`https://github.com/JetBrains/MPS/tree/${EXAMPLE_COMMIT}/`), {
+    owner: 'JetBrains',
+    repo: 'MPS',
+    ref: EXAMPLE_COMMIT,
+  });
+  assert.deepEqual(parseGitHubUrl('github.com/JetBrains/koog/tree/feature/x'), { owner: 'JetBrains', repo: 'koog', ref: 'feature/x' });
+  assert.equal(parseGitHubUrl('github.com/JetBrains/MPS/blob/master/README.md'), undefined);
+});
+
+test('a pinned commit → listed from its tree even with a token, since code search sees only the default branch', async () => {
+  const pinned = '6c1bcc42a2cbb45c241fafea9fbd82d32ac4d765';
+  // No code search answer: asking for it would fail the scan.
+  const github = replay({
+    'https://api.github.com/repos/JetBrains/android': { status: 200, body: { full_name: 'JetBrains/android', default_branch: 'master' } },
+    [`https://api.github.com/repos/JetBrains/android/commits/${pinned}`]: { status: 200, body: { sha: pinned } },
+    [`https://api.github.com/repos/JetBrains/android/git/trees/${pinned}?recursive=1`]: {
+      status: 200,
+      body: {
+        truncated: false,
+        tree: [
+          { path: 'agent/skills/writing-lint-checks/SKILL.md', mode: '100644', type: 'blob', sha: 'a' },
+          { path: 'agent/skills/writing-lint-checks/more-examples.md', mode: '100644', type: 'blob', sha: 'b' },
+        ],
+      },
+    },
+    [`https://raw.githubusercontent.com/JetBrains/android/${pinned}/agent/skills/writing-lint-checks/SKILL.md`]: {
+      status: 200,
+      body: '---\nname: writing-lint-checks\ndescription: Helps to write a new lint check.\n---\n',
+    },
+  });
+  const result = await scan(await openGitHub(`github.com/JetBrains/android/tree/${pinned}`, { fetch: github, token: 'test' }));
+  assert.equal(result.repository.commit, pinned);
+  assert.deepEqual(result.skills.map((skill) => skill.path), ['agent/skills/writing-lint-checks/SKILL.md']);
+  assert.deepEqual(result.warnings, []);
+});
+
+test('an unknown commit or branch → a clear message, not GitHub\'s 422', async () => {
+  const github = replay({
+    'https://api.github.com/repos/JetBrains/koog': { status: 200, body: { full_name: 'JetBrains/koog', default_branch: 'develop' } },
+    'https://api.github.com/repos/JetBrains/koog/commits/no-such-branch': {
+      status: 422,
+      body: { message: 'No commit found for SHA: no-such-branch' },
+    },
+  });
+  await assert.rejects(openGitHub('github.com/JetBrains/koog/tree/no-such-branch', { fetch: github }), {
+    message: 'Commit or branch not found: no-such-branch in https://github.com/JetBrains/koog',
   });
 });

@@ -1,4 +1,4 @@
-import { findSkills, type SkillFile } from './find.ts';
+import { findSkills, type Ignored, type SkillFile } from './find.ts';
 import { sortSkills, type Repository, type Skill } from './model.ts';
 import { parseSkill } from './parse.ts';
 
@@ -13,32 +13,50 @@ export type Source = {
   read(path: string): Promise<Uint8Array | undefined>;
 };
 
-export type ScanResult = { repository: Repository; skills: Skill[]; warnings: string[] };
+export type ScanResult = { repository: Repository; skills: Skill[]; warnings: string[]; ignored: Ignored[] };
 
-/** fetch → find → parse. Nothing is stored: the result is all there is. */
+/** fetch → find → parse → one skill per name. Nothing is stored: the result is all there is. */
 export async function scan(source: Source): Promise<ScanResult> {
-  const files = findSkills(source.paths, source.repository.name);
+  const { files, ignored } = findSkills(source.paths);
   // The files are read at the same time: on GitHub, each one is a request.
   const results = await Promise.all(files.map((file) => readSkill(source, file)));
-  return {
-    repository: source.repository,
-    skills: sortSkills(results.flatMap((result) => (result.skill ? [result.skill] : []))),
-    warnings: [...source.warnings, ...results.flatMap((result) => (result.warning ? [result.warning] : []))],
-  };
+  const warnings = [...source.warnings, ...results.flatMap((result) => result.warnings)];
+
+  // One skill per name, case-insensitive. The files are in root order, so the first is canonical.
+  const groups = new Map<string, Skill[]>();
+  for (const { skill } of results) {
+    if (!skill) continue;
+    const key = skill.name.toLowerCase();
+    groups.set(key, [...(groups.get(key) ?? []), skill]);
+  }
+  const skills: Skill[] = [];
+  for (const [canonical, ...copies] of groups.values()) {
+    const differing = copies.filter((copy) => copy.description !== canonical.description);
+    if (differing.length > 0) {
+      warnings.push(`${canonical.path}: description differs in ${differing.map((copy) => copy.path).join(', ')}`);
+    }
+    skills.push({ ...canonical, copies: copies.map((copy) => copy.path) });
+  }
+  return { repository: source.repository, skills: sortSkills(skills), warnings, ignored };
 }
 
-async function readSkill(source: Source, file: SkillFile): Promise<{ skill?: Skill; warning?: string }> {
+async function readSkill(source: Source, file: SkillFile): Promise<{ skill?: Skill; warnings: string[] }> {
   const bytes = await source.read(file.path);
-  if (!bytes) return { warning: `${file.path}: listed, but not found at the scanned commit; skipped` };
+  if (!bytes) return { warnings: [`${file.path}: listed, but not found at the scanned commit; skipped`] };
   const parsed = parseSkill(new TextDecoder().decode(bytes));
+  const warnings = parsed.warning ? [`${file.path}: ${parsed.warning}`] : [];
+  // Names are compared as identities are: case-insensitively.
+  if (parsed.name && parsed.name.toLowerCase() !== file.directory.toLowerCase()) {
+    warnings.push(`${file.path}: name "${parsed.name}" differs from its directory "${file.directory}"; using "${parsed.name}"`);
+  }
   const skill: Skill = {
     id: `${source.repository.id}:${file.path}`,
     repository: source.repository.id,
     path: file.path,
-    name: parsed.name ?? file.name,
+    name: parsed.name ?? file.directory,
     description: parsed.description,
     commit: source.repository.commit,
-    copies: file.copies,
+    copies: [],
   };
-  return { skill, warning: parsed.warning && `${file.path}: ${parsed.warning}` };
+  return { skill, warnings };
 }

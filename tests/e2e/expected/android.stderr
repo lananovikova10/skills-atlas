@@ -1,0 +1,2 @@
+warning: the tree is too large to list at once; looked only in .claude/skills, .agents/skills, .github/skills, agent/skills
+warning: agent/skills/android-studio-evals/SKILL.md: name "write-evals" differs from its directory "android-studio-evals"; using "write-evals"

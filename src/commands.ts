@@ -37,6 +37,7 @@ async function scanCommand(args: string[], context: Context) {
   const result = await scan(await context.open(args[0]));
   printRepository(result.repository, result.skills, context);
   for (const warning of result.warnings) context.error(`warning: ${warning}`);
+  for (const item of result.ignored) context.error(`ignored: ${item.path}: ${item.reason}`);
 }
 
 /** `<owner>/<repo> · N skills`, then each skill's name, first sentence and link. */

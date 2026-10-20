@@ -1,0 +1,13 @@
+JetBrains/android · 6 skills
+android-studio-development — Specialist in Android Studio plugin development.
+  https://github.com/JetBrains/android/blob/6c1bcc42a2cbb45c241fafea9fbd82d32ac4d765/agent/skills/android-studio-development/SKILL.md
+android-studio-diagnostics-analysis — Analyzes Android Studio diagnostic logs and thread dumps to identify UI freezes, lock contention, and system configuration issues.
+  https://github.com/JetBrains/android/blob/6c1bcc42a2cbb45c241fafea9fbd82d32ac4d765/agent/skills/android-studio-diagnostics-analysis/SKILL.md
+jewel-swing-interop — Integrate Jewel Compose UI with Swing in IntelliJ Platform plugins or desktop apps.
+  https://github.com/JetBrains/android/blob/6c1bcc42a2cbb45c241fafea9fbd82d32ac4d765/agent/skills/jewel-swing-interop/SKILL.md
+jewel-ui — Build or modify Compose Desktop UI using JetBrains Jewel components, theming, and icon loading.
+  https://github.com/JetBrains/android/blob/6c1bcc42a2cbb45c241fafea9fbd82d32ac4d765/agent/skills/jewel-ui/SKILL.md
+write-evals — Expertise in building new AI agent evaluations (evals) for Android Studio.
+  https://github.com/JetBrains/android/blob/6c1bcc42a2cbb45c241fafea9fbd82d32ac4d765/agent/skills/android-studio-evals/SKILL.md
+writing-lint-checks — Helps to write a new lint check under `/tools/base/lint/libs/lint-checks`.
+  https://github.com/JetBrains/android/blob/6c1bcc42a2cbb45c241fafea9fbd82d32ac4d765/agent/skills/writing-lint-checks/SKILL.md
