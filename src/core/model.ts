@@ -20,7 +20,7 @@ export type Skill = {
   description: string;
   /** The scanned commit, the one the link pins; empty for a local directory. */
   commit: string;
-  /** The same skill in other agents' folders. */
+  /** The same skill, by name, in the other skill roots: their paths, in root order. */
   copies: string[];
 };
 

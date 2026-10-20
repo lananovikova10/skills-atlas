@@ -1,6 +1,5 @@
-// The decisions in spec/analysis.md and spec/cli.md, checked on what the real command prints for
-// ./fixture and for a small GitHub repository answered in tests/helpers.ts. The edge cases of
-// where skills live are yours to add.
+// The decisions in spec/analysis.md, spec/cli.md and spec/edge-cases.md, checked on what the real
+// command prints for ./fixture and for a small GitHub repository answered in tests/helpers.ts.
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
@@ -8,6 +7,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { test } from 'node:test';
+import { findSkills } from '../src/core/find.ts';
 import { openGitHub } from '../src/core/github.ts';
 import { parseSkill } from '../src/core/parse.ts';
 import { replay } from '../src/core/replay.ts';
@@ -36,24 +36,102 @@ test('scan prints the repository, then each skill with its first sentence and pi
       `  https://github.com/JetBrains/example/blob/${EXAMPLE_COMMIT}/.claude/skills/commits/SKILL.md`,
     ].join('\n'),
   );
+  // Found by code search, but never read: there is no raw answer for it.
+  assert.equal(example.stderr, 'ignored: src/test/resources/skills/weather/SKILL.md: outside the skill roots');
 });
 
-test('./fixture: every skill, sorted by name, linked to its file, with a warning for the malformed one', () => {
+test('./fixture: every unique skill, sorted by name, linked to its file, copies after it', () => {
   const root = pathToFileURL(FIXTURE).href;
   assert.equal(fixture.code, 0);
   assert.equal(
     fixture.stdout,
     [
-      'fixture · 3 skills',
+      'fixture · 5 skills',
+      'code-review — Review a change before it is merged.',
+      `  ${root}/.claude/skills/reviewer/SKILL.md`,
       "code-style — Follow the project's code style.",
       `  ${root}/.github/skills/code-style/SKILL.md`,
       'commits — Write commit messages the way this repository does.',
       `  ${root}/.claude/skills/commits/SKILL.md`,
+      '  also in .agents/skills/commits/SKILL.md, .github/skills/Commits/SKILL.md',
       'release-checklist',
       `  ${root}/.agents/skills/release-checklist/SKILL.md`,
+      'writing-lint-checks — Write a lint check with its tests.',
+      `  ${root}/agent/skills/writing-lint-checks/SKILL.md`,
     ].join('\n'),
   );
-  assert.match(fixture.stderr, /^warning: \.agents\/skills\/release-checklist\/SKILL\.md: malformed front matter: /);
+  assert.match(fixture.stderr, /^warning: \.agents\/skills\/release-checklist\/SKILL\.md: malformed front matter: /m);
+});
+
+const stderr = fixture.stderr.split('\n');
+const stdout = fixture.stdout.split('\n');
+
+test('duplicate across roots → listed once, canonical .claude, the others as copies', () => {
+  assert.equal(stdout.filter((line) => line.startsWith('commits')).length, 1);
+  const at = stdout.indexOf('commits — Write commit messages the way this repository does.');
+  assert.equal(stdout[at + 1], `  ${pathToFileURL(FIXTURE).href}/.claude/skills/commits/SKILL.md`);
+  assert.equal(stdout[at + 2], '  also in .agents/skills/commits/SKILL.md, .github/skills/Commits/SKILL.md');
+});
+
+test('differing descriptions → a warning on the canonical file', () => {
+  assert.ok(stderr.includes('warning: .claude/skills/commits/SKILL.md: description differs in .github/skills/Commits/SKILL.md'));
+  // The same description in .agents is no warning.
+  assert.ok(!stderr.some((line) => line.includes('description differs') && line.includes('.agents/')));
+});
+
+test('agent/skills is a root', () => {
+  assert.ok(stdout.includes(`  ${pathToFileURL(FIXTURE).href}/agent/skills/writing-lint-checks/SKILL.md`));
+});
+
+test('product resources, test data, nested, too deep, wrong case → not listed, one ignored: line each', () => {
+  assert.deepEqual(
+    stderr.filter((line) => line.startsWith('ignored: ')),
+    [
+      'ignored: .claude/skills/group/inner/SKILL.md: nested too deep in .claude/skills',
+      'ignored: .claude/skills/lowercase/skill.md: not named SKILL.md',
+      'ignored: integration-tests/src/jvmTest/resources/skills/weather-retrieval/SKILL.md: outside the skill roots',
+      'ignored: plugins/mcp-tools/resources/skills/mps-aspect-generator/SKILL.md: outside the skill roots',
+      'ignored: plugins/x/.claude/skills/nested/SKILL.md: outside the skill roots',
+    ],
+  );
+  for (const name of ['mps-aspect-generator', 'weather-retrieval', 'nested', 'inner', 'lowercase']) {
+    assert.ok(!stdout.some((line) => line.startsWith(name)), name);
+  }
+  // After the warnings.
+  const lastWarning = stderr.findLastIndex((line) => line.startsWith('warning: '));
+  assert.ok(lastWarning < stderr.findIndex((line) => line.startsWith('ignored: ')));
+});
+
+test('front matter name ≠ directory → a warning, the front matter wins', () => {
+  assert.ok(
+    stderr.includes('warning: .claude/skills/reviewer/SKILL.md: name "code-review" differs from its directory "reviewer"; using "code-review"'),
+  );
+  assert.ok(stdout.includes('code-review — Review a change before it is merged.'));
+  assert.ok(!stdout.some((line) => line.startsWith('reviewer')));
+});
+
+test('findSkills: only <root>/<dir>/SKILL.md at the repository root, in root order', () => {
+  const { files, ignored } = findSkills([
+    'docs/.claude/skills/x/SKILL.md',
+    'SKILL.md',
+    '.claude/skills/SKILL.md',
+    'agent/skills/b/SKILL.md',
+    '.agents/skills/a/SKILL.md',
+    '.claude/skills/z/SKILL.md',
+    '.claude/skills/z/README.md',
+    '.github/skills/a/Skill.md',
+  ]);
+  assert.deepEqual(files, [
+    { path: '.claude/skills/z/SKILL.md', directory: 'z', rootIndex: 0 },
+    { path: '.agents/skills/a/SKILL.md', directory: 'a', rootIndex: 1 },
+    { path: 'agent/skills/b/SKILL.md', directory: 'b', rootIndex: 3 },
+  ]);
+  assert.deepEqual(ignored, [
+    { path: '.claude/skills/SKILL.md', reason: 'directly in .claude/skills, not in a skill directory' },
+    { path: '.github/skills/a/Skill.md', reason: 'not named SKILL.md' },
+    { path: 'SKILL.md', reason: 'outside the skill roots' },
+    { path: 'docs/.claude/skills/x/SKILL.md', reason: 'outside the skill roots' },
+  ]);
 });
 
 test('the CLI prints the result at once and stores nothing', (t) => {
