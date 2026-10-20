@@ -1,5 +1,7 @@
 # Command line
 `./skill-atlas scan <GitHub URL | directory>`
+`./skill-atlas scan https://github.com/<owner> [--include-archived] [--include-forks]`: every repository of an
+organization or user, see [organization.md](organization.md); the flags only with an owner URL, else exit code 1
 Prints the result **at once**; *nothing is stored*.
 `GITHUB_TOKEN`, optional: a higher GitHub rate limit.
 ## A pinned commit

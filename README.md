@@ -15,6 +15,9 @@ build-tools-bump-gradle-api — Bumps the Gradle API version that Kotlin Gradle 
 
 `…/tree/<commit>` scans a pinned commit, e.g. `./skill-atlas scan github.com/JetBrains/koog/tree/22e342e033c716f835312dd6cbe83193e1cbcf76`.
 
+`https://github.com/<owner>` scans every repository of an organization or a user into one list, skipping
+archived repositories and forks unless `--include-archived` / `--include-forks`; see [spec/organization.md](spec/organization.md).
+
 Set `GITHUB_TOKEN` for a higher GitHub rate limit. `npm test` runs the tests; `npm run test:e2e` runs the
 CLI on real repositories at pinned commits (network, `GITHUB_TOKEN`).
 

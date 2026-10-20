@@ -2,6 +2,7 @@
 import { fileURLToPath } from 'node:url';
 import { run } from '../src/commands.ts';
 import { openGitHub, parseGitHubUrl } from '../src/core/github.ts';
+import { scanOwner } from '../src/core/organization.ts';
 import { replay, type Recording } from '../src/core/replay.ts';
 import { openDirectory } from '../src/local.ts';
 
@@ -40,6 +41,7 @@ export async function atlas(args: string[]) {
   const code = await run(args, {
     // With a token, through code search, as EXAMPLE answers it.
     open: (input) => (parseGitHubUrl(input) ? openGitHub(input, { fetch: github, token: 'test' }) : openDirectory(input)),
+    scanOwner: (owner, options) => scanOwner(owner, { ...options, fetch: github, token: 'test' }),
     print: (text) => stdout.push(text),
     error: (text) => stderr.push(text),
   });

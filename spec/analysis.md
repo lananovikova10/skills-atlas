@@ -1,11 +1,12 @@
 # Repository analysis
 ## Input
-A **GitHub repository** URL, or a local directory
+A **GitHub repository** URL, a local directory, or a GitHub **organization or user** URL:
+every repository of it, see [organization.md](organization.md)
 ## Output
 Every unique `SKILL.md`: **name**, **description**, **link**
 ## Architecture
 Core: fetch → find → parse. CLI: a *thin client*.
-Skill: id = `repo:path`, name, description, commit
+Skill: id = `<owner>/<repo>:<path>`, name, description, commit
 ## Details
 - **GitHub API**, no clone; *under 5 s* for intellij-community
 - The name: front matter, else the directory name
@@ -37,7 +38,8 @@ one stderr line each, with a reason. An ignored file is never read.
 **Name**: front matter `name`, else `<dir>`.
 A front matter `name` that differs from `<dir>` → warning, front matter wins.
 
-**Identity**: one skill per name (case-insensitive). The same name in several roots is one skill.
+**Identity**: one skill per name (case-insensitive) within a repository. The same name in several roots is one skill;
+in two repositories of an organization scan, two skills.
 
 **Canonical location**: when a skill has several files, the first in root
 order above is used for the description and link. If the descriptions differ → warning.
