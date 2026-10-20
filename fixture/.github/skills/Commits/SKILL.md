@@ -1,5 +1,5 @@
 ---
-name: commits
+name: Commits
 description: Write short commit messages. Use when committing from GitHub.
 ---
 
