@@ -41,12 +41,10 @@ async function analyse(repo) {
 }
 
 function showResult() {
-  const { repository, skills, warnings, ignored } = state.result;
+  const { repository, warnings, ignored } = state.result;
   $('result').hidden = false;
   $('repo-link').href = repository.commit ? `${repository.url}/tree/${repository.commit}` : repository.url;
   $('repo-link').textContent = repository.id;
-  const commit = repository.commit ? ` · ${repository.commit.slice(0, 7)}` : '';
-  $('summary-text').textContent = `${skills.length} ${skills.length === 1 ? 'skill' : 'skills'}${commit}`;
   const notes = [...warnings.map((text) => `warning: ${text}`), ...ignored.map((item) => `ignored: ${item.path}: ${item.reason}`)];
   $('notes').textContent = notes.join('\n');
   $('notes').hidden = true;
@@ -58,10 +56,18 @@ function showResult() {
 function update() {
   if (!state.result) return;
   saveHash();
-  const { skills } = state.result;
+  const { repository, skills } = state.result;
   const shown = applyFilters(skills, state.filters);
+  const query = state.filters.query.trim();
   renderFacets(skills);
+  // Announced to screen readers as it changes: the summary is aria-live.
+  const commit = repository.commit ? ` · ${repository.commit.slice(0, 7)}` : '';
+  const count = query ? `Showing ${shown.length} of ${skills.length}` : String(skills.length);
+  $('summary-text').textContent = `${count} ${skills.length === 1 ? 'skill' : 'skills'}${commit}`;
+  $('search-clear').hidden = !state.filters.query;
   $('empty').hidden = shown.length > 0;
+  $('empty-text').textContent = query ? `No skills match "${query}"` : 'No skills match these filters.';
+  $('empty-clear').hidden = !query;
   $('list-view').hidden = state.view !== 'list';
   $('graph-view').hidden = state.view !== 'graph' || shown.length === 0;
   for (const tab of document.querySelectorAll('[data-view]')) tab.setAttribute('aria-selected', String(tab.dataset.view === state.view));
@@ -177,10 +183,26 @@ $('repo-form').addEventListener('submit', (event) => {
   const repo = $('repo').value.trim();
   if (repo) analyse(repo);
 });
-$('search').addEventListener('input', () => {
-  state.filters.query = $('search').value;
+/** The search, as typed: the list follows every keystroke; the filters and the view stay. */
+function setQuery(query) {
+  state.filters.query = query;
+  if ($('search').value !== query) $('search').value = query;
   update();
+}
+
+const clearSearch = () => {
+  setQuery('');
+  $('search').focus();
+};
+
+$('search').addEventListener('input', () => setQuery($('search').value));
+$('search').addEventListener('keydown', (event) => {
+  if (event.key !== 'Escape' || !$('search').value) return;
+  event.preventDefault();
+  setQuery('');
 });
+$('search-clear').addEventListener('click', clearSearch);
+$('empty-clear').addEventListener('click', clearSearch);
 $('clear-filters').addEventListener('click', () => {
   state.filters = fromHash('').filters;
   $('search').value = '';
@@ -199,7 +221,18 @@ $('graph-keys').addEventListener('change', update);
 $('graph-fit').addEventListener('click', () => graph?.fit());
 $('sheet-close').addEventListener('click', closeSheet);
 $('scrim').addEventListener('click', closeSheet);
-document.addEventListener('keydown', (event) => event.key === 'Escape' && closeSheet());
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape') closeSheet();
+  // `/` focuses the search, unless the user is typing somewhere already.
+  if (event.key === '/' && !event.ctrlKey && !event.metaKey && !event.altKey && !isTyping(event.target)) {
+    event.preventDefault();
+    $('search').focus();
+  }
+});
+
+function isTyping(target) {
+  return target instanceof HTMLElement && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName));
+}
 
 $('repo').value = state.repo;
 $('search').value = state.filters.query;

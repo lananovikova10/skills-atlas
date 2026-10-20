@@ -36,17 +36,20 @@
       <section id="result" hidden>
         <div class="summary">
           <a id="repo-link" target="_blank" rel="noopener"></a>
-          <span id="summary-text"></span>
+          <span id="summary-text" aria-live="polite"></span>
           <button class="button text" id="show-notes" type="button" hidden></button>
         </div>
         <div class="banner notes" id="notes" hidden></div>
 
         <div class="layout">
           <aside class="filters card" aria-label="Filters">
-            <label class="text-field dense">
-              <span class="text-field-label">Search</span>
-              <input id="search" type="search" placeholder="Name or description" />
-            </label>
+            <div class="text-field dense search-field">
+              <label class="text-field-label" for="search">Search</label>
+              <input id="search" type="search" placeholder="Name or description · press /" autocomplete="off" spellcheck="false" />
+              <button class="icon-button" id="search-clear" type="button" aria-label="Clear search" hidden>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 6.4 17.6 5 12 10.6 6.4 5 5 6.4 10.6 12 5 17.6 6.4 19 12 13.4 17.6 19 19 17.6 13.4 12z" /></svg>
+              </button>
+            </div>
             <div id="facets"></div>
             <button class="button text" type="button" id="clear-filters">Clear filters</button>
           </aside>
@@ -62,7 +65,10 @@
               <div id="graph" class="card"></div>
               <div class="graph-legend" id="graph-legend"></div>
             </div>
-            <p class="empty" id="empty" hidden>No skills match these filters.</p>
+            <div class="empty" id="empty" hidden>
+              <p id="empty-text">No skills match these filters.</p>
+              <button class="button text" type="button" id="empty-clear" hidden>Clear search</button>
+            </div>
           </div>
         </div>
       </section>
