@@ -1,6 +1,7 @@
 // The demo docs/demo/search-filter.mp4 as a test: the steps of spec/web.md's Search and Filters, on
 // JetBrains/intellij-community at the recorded commit. Each step waits for its result on the page,
-// never for a time; the pauses after it are for whoever watches the video, not for the page.
+// never for a time; the pauses after it are for whoever watches the video, not for the page. After a
+// step's result, the page is compared to its screenshot in search-filter.spec.ts-snapshots/.
 import { DEMO_REPOSITORY } from './recording.ts';
 import { expect, openPage, test } from './fonts.ts';
 
@@ -35,6 +36,7 @@ test('the demo: live search, the graph, a chip AND the search, Clear filters', a
     await expect(summary).toHaveText(`${SKILLS} skills · ${COMMIT}`);
     await expect(cards).toHaveCount(SKILLS);
     await expect(page.locator('#show-notes')).toHaveText('0 warnings · 0 ignored');
+    await expect(page).toHaveScreenshot('01-skill-list.png');
     await watch(2000);
   });
 
@@ -45,6 +47,7 @@ test('the demo: live search, the graph, a chip AND the search, Clear filters', a
     await expect(summary).toHaveText(`Showing 4 of ${SKILLS} skills · ${COMMIT}`);
     await expect(names()).toHaveText(['code-style', 'jna', 'kotlin-ui-dsl', 'kotlin-ui-swing-component-architecture']);
     await expect(page).toHaveURL(/q=kotlin/);
+    await expect(page).toHaveScreenshot('02-search-kotlin.png');
     await watch(2200);
   });
 
@@ -53,6 +56,7 @@ test('the demo: live search, the graph, a chip AND the search, Clear filters', a
     await expect(cards).toHaveCount(SKILLS);
     await typeSearch('ui test');
     await expect(names()).toHaveText(['driver-ui-tests']);
+    await expect(page).toHaveScreenshot('03-search-two-words.png');
     await watch(2500);
   });
 
@@ -60,6 +64,7 @@ test('the demo: live search, the graph, a chip AND the search, Clear filters', a
     await typeSearch('zzz');
     await expect(page.locator('#empty-text')).toHaveText('No skills match "ui testzzz"');
     await expect(cards).toHaveCount(0);
+    await expect(page).toHaveScreenshot('04-empty-state.png');
     await watch(2000);
     await page.click('#empty-clear');
     await expect(search).toHaveValue('');
@@ -78,6 +83,7 @@ test('the demo: live search, the graph, a chip AND the search, Clear filters', a
     await expect(page.locator('#graph-legend')).toContainText('Claude Code');
     await expect(summary).toHaveText(`Showing 2 of ${SKILLS} skills · ${COMMIT}`);
     await expect(page).toHaveURL(/view=graph/);
+    await expect(page).toHaveScreenshot('05-graph.png');
     await watch(3000);
     await page.click('[data-view="list"]');
     await expect(names()).toHaveText(['jewel-markdown', 'jewel-release']);
@@ -102,6 +108,7 @@ test('the demo: live search, the graph, a chip AND the search, Clear filters', a
     await expect(names()).toHaveText(['jewel-release']);
     await expect(summary).toHaveText(`Showing 1 of ${SKILLS} skills · ${COMMIT}`);
     await expect(chip.locator('.count')).toHaveText('1');
+    await expect(page).toHaveScreenshot('06-chip-and-search.png');
     await watch(2500);
   });
 
@@ -111,6 +118,7 @@ test('the demo: live search, the graph, a chip AND the search, Clear filters', a
     await expect(page.locator('.chip[aria-pressed="true"]')).toHaveCount(0);
     await expect(cards).toHaveCount(SKILLS);
     await expect(summary).toHaveText(`${SKILLS} skills · ${COMMIT}`);
+    await expect(page).toHaveScreenshot('07-filters-cleared.png');
     await watch(1500);
   });
 });

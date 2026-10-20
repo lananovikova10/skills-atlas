@@ -15,7 +15,9 @@
     "test:e2e": "node --test tests/e2e/*.test.ts",
     "typecheck": "tsc --noEmit",
     "build:standalone": "node scripts/build-standalone.ts",
-    "test:browser": "playwright test"
+    "test:browser": "playwright test",
+    "e2e": "playwright test",
+    "e2e:update": "playwright test --update-snapshots"
   },
   "dependencies": {
     "cytoscape": "^3.34.4",
