@@ -25,7 +25,9 @@ registerHooks({
     specifier === '/vendor/cytoscape.mjs' ? { url: CYTOSCAPE_STUB, shortCircuit: true } : next(specifier, context),
 });
 
-const { server, url } = await startServer({ open, port: 0 });
+// The token each scan was asked with, as the server got it from the page.
+const tokens: (string | undefined)[] = [];
+const { server, url } = await startServer({ open: (input, token) => (tokens.push(token), open(input)), port: 0 });
 after(async () => {
   await GlobalRegistrator.unregister();
   server.close();
@@ -249,4 +251,50 @@ test('page: / focuses the search, unless focus is already in a field', () => {
   const typing = press($('repo'), '/');
   assert.equal(document.activeElement, $('repo'));
   assert.equal(typing.defaultPrevented, false);
+});
+
+test('page: a GitHub token field, optional and hidden as typed, with a hint', () => {
+  assert.equal($('token').type, 'password');
+  assert.equal($('token').required, false);
+  assert.equal($('token').value, '');
+  assert.equal($('token').getAttribute('autocomplete'), 'off');
+  assert.equal($('token').closest('label')?.querySelector('.text-field-label')?.textContent, 'GitHub token');
+  const hint = document.getElementById($('token').getAttribute('aria-describedby') ?? '')?.textContent ?? '';
+  assert.match(hint, /rate limit/);
+  assert.match(hint, /never put in the link/);
+});
+
+/** Types a token and presses Analyse; resolves once the scan is shown. */
+async function analyseWith(token: string) {
+  tokens.length = 0;
+  $('token').value = token;
+  $('repo-form').dispatchEvent(new Event('submit', { cancelable: true }));
+  await until(() => tokens.length === 1 && !$('analyse').disabled);
+}
+
+test('page: Analyse sends the token to the scan; never in the URL hash', async () => {
+  type('commit');
+  await analyseWith(' ghp_secret ');
+  assert.deepEqual(tokens, ['ghp_secret']);
+  assert.ok(!location.hash.includes('ghp_secret'), location.hash);
+  assert.ok(!location.href.includes('ghp_secret'), location.href);
+  assert.equal(location.hash, hash('&q=commit'));
+  assert.deepEqual(listed(), ['code-style', 'commits']);
+  assert.equal($('token').value, ' ghp_secret ');
+});
+
+test('page: an empty token field sends no token', async () => {
+  await analyseWith('ghp_secret');
+  await analyseWith('');
+  assert.deepEqual(tokens, [undefined]);
+});
+
+test('page: nothing is stored: a reload forgets the token and scans without one', async () => {
+  await analyseWith('ghp_secret');
+  tokens.length = 0;
+  await load(location.hash);
+  assert.equal($('token').value, '');
+  assert.deepEqual(tokens, [undefined]);
+  assert.equal(localStorage.length, 0);
+  assert.equal(sessionStorage.length, 0);
 });

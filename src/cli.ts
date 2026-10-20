@@ -5,7 +5,7 @@ import { run } from './commands.ts';
 import { openGitHub, parseGitHubUrl } from './core/github.ts';
 import { scanOwner } from './core/organization.ts';
 import { openDirectory } from './local.ts';
-import { startServer } from './serve.ts';
+import { openFromPage, startServer } from './serve.ts';
 
 const token = process.env.GITHUB_TOKEN || undefined;
 const open = (input: string) => (parseGitHubUrl(input) ? openGitHub(input, { fetch, token }) : openDirectory(input));
@@ -36,7 +36,7 @@ process.exitCode = await run(process.argv.slice(2), {
   print: (text) => (clearProgress(), console.log(text)),
   error: (text) => (clearProgress(), console.error(text)),
   // The server keeps the process running until it is stopped.
-  serve: async (port) => (await startServer({ open, port })).url,
+  serve: async (port) => (await startServer({ open: openFromPage({ fetch, envToken: token }), port })).url,
   progress: process.stderr.isTTY
     ? (text) => {
         process.stderr.write(`\r\x1b[2K${text}`);

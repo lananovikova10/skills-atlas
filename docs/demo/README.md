@@ -5,3 +5,6 @@
 - [organization-scan.mp4](organization-scan.mp4): `./skill-atlas scan https://github.com/anthropics`: the progress
   line, then every repository's skills in one list ([spec/organization.md](../../spec/organization.md)).
   A real run replayed in a terminal; waits over 1.5 s are shortened
+- [github-token.mp4](github-token.mp4): the standalone page on JetBrains/koog, in Chromium against live GitHub:
+  without a token, a token GitHub rejects, the user's own token (hidden as typed), then a reload that forgets it;
+  the captions are added for the video ([spec/web.md](../../spec/web.md#github-token))

@@ -1,13 +1,14 @@
 # Web view
 `./skill-atlas serve [--port <port>]` opens a local page over the same scan as `scan`:
-a GitHub URL (also `…/tree/<commit or branch>`) or a local directory; `GITHUB_TOKEN` as in the CLI.
+a GitHub URL (also `…/tree/<commit or branch>`) or a local directory; the page's own [GitHub token](#github-token),
+else `GITHUB_TOKEN` as in the CLI.
 *Nothing is stored*.
 - Listens on **127.0.0.1** only, port **4173** by default; prints `Skill Atlas at http://127.0.0.1:<port>/`
 - A port in use → `Port <port> is in use; try --port <another>`, exit code 1; a bad port → the usage, exit code 1
 - Serves only its own page files and Cytoscape; anything else → 404
 ## API
-`GET /api/scan?repo=<GitHub URL | directory>` → JSON: `repository`, `warnings`, `ignored` as in the CLI, and `skills`
-sorted by name, each with:
+`GET /api/scan?repo=<GitHub URL | directory>`, with `Authorization: Bearer <token>` when the page has a token,
+→ JSON: `repository`, `warnings`, `ignored` as in the CLI, and `skills` sorted by name, each with:
 - `name`, `description` (full), `path` (canonical), `copies`, `link`
 - `properties`: the other front matter keys, as parsed; `body`: the Markdown after the front matter
 - `files`: the canonical file, then its copies, each with `path`, `agent`, `link`
@@ -19,10 +20,23 @@ No `repo` or an `AtlasError` (unreachable repository, unknown commit, …) → 4
 `npm run build:standalone [-- <directory>]` writes the same page as **one HTML file**, `dist/` by default:
 `skill-atlas-standalone.html`, and the same file as `index.html` for GitHub Pages.
 - The styles, the scripts and Cytoscape are inline: no other file is loaded, and it opens from the disk
-- The page asks `/api/scan` as above; the page itself answers it, from live GitHub without a token
+- The page asks `/api/scan` as above; the page itself answers it, from live GitHub, with the page's token if any:
+  then its files come through the contents API, since raw.githubusercontent.com refuses a token from a page
 - A GitHub URL only: anything else → 400 `This standalone page scans GitHub repositories only: <input>`;
   no `repo` → 400 `Usage: /api/scan?repo=<GitHub URL>`; an `AtlasError` → 400 with its message
 - Every push to `main` runs the tests, builds it and publishes it on GitHub Pages (`.github/workflows/pages.yml`)
+## GitHub token
+Without a token GitHub allows 60 API requests an hour per IP address; a user brings their own token:
+- A **GitHub token** field next to **Repository**, optional, `type="password"`, with a hint: what it is for,
+  that it is used only to ask GitHub, and that it is not kept
+- **Analyse** sends it as `Authorization: Bearer <token>`; an empty field sends no header
+- *Nothing is stored*: not in the URL hash, so not in a shared link; not in storage; a reload forgets it
+- With a token, as in the CLI: GitHub's higher rate limit, code search over the default branch, private repositories
+- `serve`: the page's token wins over `GITHUB_TOKEN`; an empty field → `GITHUB_TOKEN`, if set
+- Messages name the page's token, unless `serve` used `GITHUB_TOKEN`:
+  - No token, the rate limit → `GitHub rate limit reached (resets at <time> UTC); add a GitHub token`
+  - A token GitHub rejects (401) → `GitHub rejected the GitHub token`
+  - A tree too large for one answer → the CLI's warning, with `(a GitHub token searches everywhere)`
 ## Agents
 | Root | Agent |
 |---|---|

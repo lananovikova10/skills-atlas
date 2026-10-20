@@ -2,7 +2,8 @@
 import { agentColor, applyFilters, FACETS, facetCounts, facetLabel, firstSentence, fromHash, renderMarkdown, toHash, TYPES } from './atlas.js';
 
 const $ = (id) => document.getElementById(id);
-const state = { ...fromHash(location.hash), result: undefined };
+// The token is kept here only: never in the hash, never stored.
+const state = { ...fromHash(location.hash), result: undefined, token: '' };
 let graph;
 
 function element(tag, attributes = {}, ...children) {
@@ -25,7 +26,8 @@ async function analyse(repo) {
   $('progress').hidden = false;
   $('analyse').disabled = true;
   try {
-    const response = await fetch(`/api/scan?repo=${encodeURIComponent(repo)}`);
+    const headers = state.token ? { Authorization: `Bearer ${state.token}` } : {};
+    const response = await fetch(`/api/scan?repo=${encodeURIComponent(repo)}`, { headers });
     const body = await response.json();
     if (!response.ok) throw new Error(body.error ?? response.statusText);
     state.result = body;
@@ -181,6 +183,7 @@ function closeSheet() {
 $('repo-form').addEventListener('submit', (event) => {
   event.preventDefault();
   const repo = $('repo').value.trim();
+  state.token = $('token').value.trim();
   if (repo) analyse(repo);
 });
 /** The search, as typed: the list follows every keystroke; the filters and the view stay. */

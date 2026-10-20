@@ -9,6 +9,13 @@ export type GitHubOptions = {
   fetch: Fetch;
   /** With a token, skills are found through code search; without it, through the tree. */
   token?: string;
+  /** How the messages name the token: `GITHUB_TOKEN` by default; the web view's field with `PAGE_TOKEN`. */
+  tokenHelp?: TokenHelp;
+  /**
+   * With a token, files are read through the contents API, not raw.githubusercontent.com: a browser
+   * cannot send it a token, since it refuses the CORS preflight.
+   */
+  filesThroughApi?: boolean;
   /** Cancels every request still running. */
   signal?: AbortSignal;
   /** Each request fails after this many milliseconds; none by default. */
@@ -17,6 +24,33 @@ export type GitHubOptions = {
   sleep?: (ms: number, signal?: AbortSignal) => Promise<void>;
   now?: () => number;
 };
+
+/** What a message says about the token: where to set one, that it was rejected, what it would search. */
+export type TokenHelp = { set: string; rejected: string; searches: string };
+
+export const ENV_TOKEN: TokenHelp = {
+  set: 'set GITHUB_TOKEN',
+  rejected: 'GitHub rejected the token in GITHUB_TOKEN',
+  searches: 'GITHUB_TOKEN searches everywhere',
+};
+
+/** The web view: the token typed into the page. */
+export const PAGE_TOKEN: TokenHelp = {
+  set: 'add a GitHub token',
+  rejected: 'GitHub rejected the GitHub token',
+  searches: 'a GitHub token searches everywhere',
+};
+
+/** The web view's options: the token typed into the page, else the server's own GITHUB_TOKEN. */
+export function webToken(pageToken: string | undefined, envToken: string | undefined): Pick<GitHubOptions, 'token' | 'tokenHelp'> {
+  if (pageToken || !envToken) return { token: pageToken || undefined, tokenHelp: PAGE_TOKEN };
+  return { token: envToken, tokenHelp: ENV_TOKEN };
+}
+
+/** The token in `Authorization: Bearer <token>`: how the page sends the one it was given. */
+export function bearer(authorization: string | null | undefined): string | undefined {
+  return /^Bearer\s+(\S+)\s*$/i.exec(authorization ?? '')?.[1];
+}
 
 const API = 'https://api.github.com';
 const RAW = 'https://raw.githubusercontent.com';
@@ -55,13 +89,15 @@ export async function openGitHub(input: string, options: GitHubOptions): Promise
   );
   const warnings: string[] = [];
   // Code search sees only the default branch as it is now, so a pinned ref is always listed from its tree.
-  const paths = options.token && !name.ref ? await searchPaths(github, id) : await treePaths(github, id, sha, warnings, !name.ref);
+  const paths = options.token && !name.ref
+    ? await searchPaths(github, id)
+    : await treePaths(github, id, sha, warnings, !name.ref && (options.tokenHelp ?? ENV_TOKEN));
   const [organization, repo] = id.split('/');
   return {
     repository: { id, organization, name: repo, url: `https://github.com/${id}`, commit: sha },
     paths,
     warnings,
-    read: (path) => github.raw(`${RAW}/${id}/${sha}/${encodePath(path)}`),
+    read: (path) => github.file(id, sha, path),
   };
 }
 
@@ -92,7 +128,7 @@ export async function openDefaultBranch(github: Client, id: string, branch: stri
     repository: { ...repository, commit: commit.sha },
     paths,
     warnings: [],
-    read: (path) => github.raw(`${RAW}/${id}/${commit.sha}/${encodePath(path)}`),
+    read: (path) => github.file(id, commit.sha, path),
   };
 }
 
@@ -113,10 +149,10 @@ async function searchPaths(github: Client, id: string): Promise<string[]> {
 type Tree = { truncated: boolean; tree: { path: string; mode: string; type: string; sha: string }[] };
 
 /** The whole tree at once, or only the skill roots when it is too large for one answer. */
-async function treePaths(github: Client, id: string, sha: string, warnings: string[], searchable: boolean): Promise<string[]> {
+async function treePaths(github: Client, id: string, sha: string, warnings: string[], search: TokenHelp | false): Promise<string[]> {
   const tree = await github.json<Tree>(`${API}/repos/${id}/git/trees/${sha}?recursive=1`);
   if (!tree.truncated) return files(tree);
-  const hint = searchable ? ' (GITHUB_TOKEN searches everywhere)' : '';
+  const hint = search ? ` (${search.searches})` : '';
   warnings.push(`the tree is too large to list at once; looked only in ${SKILL_ROOTS.join(', ')}${hint}`);
   const paths: string[] = [];
   for (const root of SKILL_ROOTS) {
@@ -158,7 +194,7 @@ const LONGEST_WAIT = 60_000;
 const RETRIES = 3;
 
 /** A GitHub API client: answers are shared by URL, rate limits are waited out when they are short. */
-export function createClient({ fetch, token, signal, timeout, sleep = wait, now = Date.now }: GitHubOptions) {
+export function createClient({ fetch, token, tokenHelp = ENV_TOKEN, filesThroughApi, signal, timeout, sleep = wait, now = Date.now }: GitHubOptions) {
   const headers: Record<string, string> = { Accept: 'application/vnd.github+json' };
   if (token) headers.Authorization = `Bearer ${token}`;
   const answers = new Map<string, Promise<unknown>>(); // the root tree is asked for once per skill root
@@ -187,9 +223,9 @@ export function createClient({ fetch, token, signal, timeout, sleep = wait, now 
           await sleep(limit.wait, signal);
           continue;
         }
-        throw new RateLimitError(token ? (limit.reset ? 'try again then' : 'try again in a minute') : 'set GITHUB_TOKEN', limit.reset);
+        throw new RateLimitError(token ? (limit.reset ? 'try again then' : 'try again in a minute') : tokenHelp.set, limit.reset);
       }
-      if (response.status === 401) throw new AtlasError('GitHub rejected the token in GITHUB_TOKEN');
+      if (response.status === 401) throw new AtlasError(tokenHelp.rejected);
       if (response.status === 409) throw new EmptyRepositoryError('the repository is empty');
       throw new AtlasError(`GitHub answered ${response.status} for ${url}${text && `: ${text}`}`);
     }
@@ -202,10 +238,14 @@ export function createClient({ fetch, token, signal, timeout, sleep = wait, now 
       return answers.get(url) as Promise<T>;
     },
     /** A file's bytes at the scanned commit, or undefined if it is not there. */
-    async raw(url: string): Promise<Uint8Array | undefined> {
+    async file(id: string, commit: string, path: string): Promise<Uint8Array | undefined> {
       // The token lets a private repository's files be read too.
-      const response = await get(url, token ? { headers: { Authorization: `Bearer ${token}` } } : {});
+      const [url, init] = token && filesThroughApi
+        ? [`${API}/repos/${id}/contents/${encodePath(path)}?ref=${commit}`, { headers: { ...headers, Accept: 'application/vnd.github.raw' } }]
+        : [`${RAW}/${id}/${commit}/${encodePath(path)}`, token ? { headers: { Authorization: `Bearer ${token}` } } : {}];
+      const response = await get(url, init);
       if (response.status === 404) return undefined;
+      if (response.status === 401) throw new AtlasError(tokenHelp.rejected);
       if (!response.ok) throw new AtlasError(`GitHub answered ${response.status} for ${url}`);
       return new Uint8Array(await response.arrayBuffer());
     },
