@@ -14,7 +14,7 @@ build-tools-bump-gradle-api — Bumps the Gradle API version that Kotlin Gradle 
 ```
 
 `./skill-atlas serve` opens the same scan as a web page at http://127.0.0.1:4173/: a list and a graph of
-the skills, filters by agent, type, allowed tools and front matter, and each skill's front matter and content.
+the skills, a live search and filters by agent, type, allowed tools and front matter, and each skill's front matter and content.
 
 `…/tree/<commit>` scans a pinned commit, e.g. `./skill-atlas scan github.com/JetBrains/koog/tree/22e342e033c716f835312dd6cbe83193e1cbcf76`.
 
