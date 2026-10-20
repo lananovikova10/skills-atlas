@@ -1,0 +1,2 @@
+ignored: integration-tests/src/jvmTest/resources/skills/arithmetic-evaluator/SKILL.md: outside the skill roots
+ignored: integration-tests/src/jvmTest/resources/skills/weather-retrieval/SKILL.md: outside the skill roots

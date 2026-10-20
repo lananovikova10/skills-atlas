@@ -1,6 +1,19 @@
 # Edge cases
 Where skills live, and what is not a skill. The rules are in [analysis.md](analysis.md);
-each case is tested on [../fixture](../fixture/) by `tests/scan.test.ts`.
+each case is tested on [../fixture](../fixture/) by `tests/scan.test.ts`, and on the real
+repositories below by `tests/e2e/real-repositories.test.ts` (`npm run test:e2e`).
+
+## Real repositories
+Each one is pinned to a commit, so the expected output in `tests/e2e/expected/` never changes.
+
+| Repository | Commit | Cases |
+|---|---|---|
+| JetBrains/MPS | `d7e4f5c1394535b05e90dde6e3e7e8a3f3e174a2` | 1: 42 skills in `.claude` and `.agents`, listed once; 3: product skills in `plugins/` are not copies; a tree too large for one answer |
+| JetBrains/android | `6c1bcc42a2cbb45c241fafea9fbd82d32ac4d765` | 2: `agent/skills`, the last commit with it; name ≠ directory (`write-evals`); a tree too large for one answer |
+| JetBrains/koog | `22e342e033c716f835312dd6cbe83193e1cbcf76` | 3: test data in `integration-tests/…/skills` ignored |
+
+Also tested on them: every link pins the commit; a full URL with a trailing slash is the same
+pin; an unknown commit is a clear message and exit code 1.
 
 ## 1. Duplicates across roots
 **Example**: a repository with the same skill in `.claude/skills/commits` and

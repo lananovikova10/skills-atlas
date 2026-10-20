@@ -8,9 +8,10 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { test } from 'node:test';
 import { findSkills } from '../src/core/find.ts';
-import { openGitHub } from '../src/core/github.ts';
+import { openGitHub, parseGitHubUrl } from '../src/core/github.ts';
 import { parseSkill } from '../src/core/parse.ts';
 import { replay } from '../src/core/replay.ts';
+import { scan } from '../src/core/scan.ts';
 import { atlas, CLI, EXAMPLE_COMMIT, FIXTURE } from './helpers.ts';
 
 const fixture = await atlas(['scan', FIXTURE]);
@@ -168,5 +169,56 @@ test('rate limit → a message that asks for GITHUB_TOKEN', async () => {
   });
   await assert.rejects(openGitHub('https://github.com/JetBrains/MPS', { fetch: limited }), {
     message: 'GitHub rate limit reached; set GITHUB_TOKEN',
+  });
+});
+
+test('github.com/<owner>/<repo>/tree/<ref> pins the commit or branch to scan', () => {
+  assert.deepEqual(parseGitHubUrl('github.com/JetBrains/MPS'), { owner: 'JetBrains', repo: 'MPS' });
+  assert.deepEqual(parseGitHubUrl(`https://github.com/JetBrains/MPS/tree/${EXAMPLE_COMMIT}/`), {
+    owner: 'JetBrains',
+    repo: 'MPS',
+    ref: EXAMPLE_COMMIT,
+  });
+  assert.deepEqual(parseGitHubUrl('github.com/JetBrains/koog/tree/feature/x'), { owner: 'JetBrains', repo: 'koog', ref: 'feature/x' });
+  assert.equal(parseGitHubUrl('github.com/JetBrains/MPS/blob/master/README.md'), undefined);
+});
+
+test('a pinned commit → listed from its tree even with a token, since code search sees only the default branch', async () => {
+  const pinned = '6c1bcc42a2cbb45c241fafea9fbd82d32ac4d765';
+  // No code search answer: asking for it would fail the scan.
+  const github = replay({
+    'https://api.github.com/repos/JetBrains/android': { status: 200, body: { full_name: 'JetBrains/android', default_branch: 'master' } },
+    [`https://api.github.com/repos/JetBrains/android/commits/${pinned}`]: { status: 200, body: { sha: pinned } },
+    [`https://api.github.com/repos/JetBrains/android/git/trees/${pinned}?recursive=1`]: {
+      status: 200,
+      body: {
+        truncated: false,
+        tree: [
+          { path: 'agent/skills/writing-lint-checks/SKILL.md', mode: '100644', type: 'blob', sha: 'a' },
+          { path: 'agent/skills/writing-lint-checks/more-examples.md', mode: '100644', type: 'blob', sha: 'b' },
+        ],
+      },
+    },
+    [`https://raw.githubusercontent.com/JetBrains/android/${pinned}/agent/skills/writing-lint-checks/SKILL.md`]: {
+      status: 200,
+      body: '---\nname: writing-lint-checks\ndescription: Helps to write a new lint check.\n---\n',
+    },
+  });
+  const result = await scan(await openGitHub(`github.com/JetBrains/android/tree/${pinned}`, { fetch: github, token: 'test' }));
+  assert.equal(result.repository.commit, pinned);
+  assert.deepEqual(result.skills.map((skill) => skill.path), ['agent/skills/writing-lint-checks/SKILL.md']);
+  assert.deepEqual(result.warnings, []);
+});
+
+test('an unknown commit or branch → a clear message, not GitHub\'s 422', async () => {
+  const github = replay({
+    'https://api.github.com/repos/JetBrains/koog': { status: 200, body: { full_name: 'JetBrains/koog', default_branch: 'develop' } },
+    'https://api.github.com/repos/JetBrains/koog/commits/no-such-branch': {
+      status: 422,
+      body: { message: 'No commit found for SHA: no-such-branch' },
+    },
+  });
+  await assert.rejects(openGitHub('github.com/JetBrains/koog/tree/no-such-branch', { fetch: github }), {
+    message: 'Commit or branch not found: no-such-branch in https://github.com/JetBrains/koog',
   });
 });
