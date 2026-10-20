@@ -306,6 +306,14 @@ test('a repository that times out is a warning naming it; the scan goes on', asy
   assert.match(result.warnings[0], /^abc\/b: Cannot reach GitHub: .*timeout/i);
 });
 
+test('a skill root GitHub truncates is a warning naming its repository; the scan goes on', async () => {
+  const url = `${API}/repos/abc/b/git/trees/abc/b:.claude/skills?recursive=1`;
+  const truncated = { ...ABC, [url]: { status: 200, body: { ...(ABC[url].body as object), truncated: true } } };
+  const result = await scanOwner('abc', { fetch: replay(truncated), token: 'test' });
+  assert.deepEqual(result.skills.map((skill) => skill.name).sort(), ['one', 'three']);
+  assert.deepEqual(result.warnings, ['abc/b: cannot completely scan .claude/skills: GitHub truncated the tree']);
+});
+
 test('above the cap, the scan stops there with a warning naming how many were skipped', async () => {
   const result = await scanOwner('abc', { fetch: replay(ABC), token: 'test', cap: 2 });
   assert.deepEqual(result.repositories.map((repository) => repository.id), ['abc/a', 'abc/b']);
