@@ -13,4 +13,6 @@ Integration tests for every case in the spec.
 ## Commands
 - `npm ci`: first, in a fresh checkout
 - `npm test`: the tests
-- `npm run test:browser`: the web view in Chromium (`npx playwright install chromium` once); a video of every run in `test-results/`
+- `npm run e2e`: the web view in Chromium, compared to its screenshots to the pixel; a video of every run in `test-results/`.
+  Only in the Playwright image (the Docker command in [README.md](README.md)), or leave it to CI (`e2e.yml`): on a Mac the
+  screenshots never match. `npm run e2e:update` there, or the `update-baselines` workflow, when the page changes

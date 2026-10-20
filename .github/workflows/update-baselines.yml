@@ -1,0 +1,31 @@
+# Makes the screenshot baselines in the same image as e2e.yml, so they match it, and commits them to
+# the branch. Actions → update-baselines → Run workflow, or: gh workflow run update-baselines.yml -f branch=<branch>
+name: update-baselines
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: Branch to update
+        required: true
+permissions:
+  contents: write
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    container: mcr.microsoft.com/playwright:v1.64.1-noble
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.branch }}
+      - run: npm ci
+      - run: npm run e2e:update
+        env:
+          HOME: /root
+      - run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add -A 'tests/browser/*-snapshots/*.png'
+          git commit -m "test: update screenshot baselines" || echo "No changes"
+          git push

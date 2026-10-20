@@ -23,9 +23,19 @@ archived repositories and forks unless `--include-archived` / `--include-forks`;
 
 Set `GITHUB_TOKEN` for a higher GitHub rate limit; in the web view, and on the standalone page, the
 **GitHub token** field does the same, for that page only. `npm test` runs the tests; `npm run test:e2e` runs the
-CLI on real repositories at pinned commits (network, `GITHUB_TOKEN`); `npm run test:browser` plays the
-search demo in Chromium on recorded data and records a video of every run in `test-results/`
-(once: `npx playwright install chromium`).
+CLI on real repositories at pinned commits (network, `GITHUB_TOKEN`); `npm run e2e` plays the
+search demo in Chromium on recorded data, compares the page to its screenshots to the pixel and records a
+video of every run in `test-results/`. The screenshots match only in the Playwright image CI uses, never on
+a Mac, so run it there (the second `-v` keeps the Linux `node_modules` out of yours):
+
+```
+docker run --rm -it --platform linux/amd64 -v "$PWD":/work -v /work/node_modules -w /work --ipc=host \
+  mcr.microsoft.com/playwright:v1.64.1-noble bash -c "npm ci && npm run e2e"
+```
+
+A change to the page changes its screenshots: `npm run e2e:update` in the same command writes new ones, or
+run Actions → **update-baselines** on the branch, which commits them. The image's version is the one of
+`@playwright/test` in `package.json`: move them together.
 
 - [spec/](spec/): what it does. [AGENTS.md](AGENTS.md): the definition of done.
 - [fixture/](fixture/README.md): a small repository for the tests.
