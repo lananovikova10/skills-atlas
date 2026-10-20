@@ -1,4 +1,5 @@
 // Runs the commands the way the CLI does, with GitHub answering from EXAMPLE below.
+import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { cpSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -87,7 +88,7 @@ export function copyFixture(t: { after(fn: () => void): void }, { git = true } =
   if (!git) return copy;
   const inCopy = (args: string[], date?: string) =>
     execFileSync('git', ['-C', copy, '-c', 'user.name=Test', '-c', 'user.email=test@example.com', '-c', 'commit.gpgsign=false', ...args], {
-      env: { ...process.env, GIT_AUTHOR_DATE: date, GIT_COMMITTER_DATE: date },
+      env: { ...process.env, GIT_AUTHOR_DATE: date && gitDate(date), GIT_COMMITTER_DATE: date && gitDate(date) },
       encoding: 'utf8',
     });
   inCopy(['init', '-q']);
@@ -99,10 +100,17 @@ export function copyFixture(t: { after(fn: () => void): void }, { git = true } =
   return copy;
 }
 
-/** The commit of FIXTURE_HISTORY made at `date`, in a copy from `copyFixture`. */
+/** `@<seconds> +0100`: git's own form, read the same by every version of git, unlike ISO 8601. */
+function gitDate(date: string): string {
+  const offset = /([+-]\d\d):?(\d\d)$/.exec(date);
+  return `@${Date.parse(date) / 1000} ${offset ? `${offset[1]}${offset[2]}` : '+0000'}`;
+}
+
+/** The commit of FIXTURE_HISTORY made at `date`, in a copy from `copyFixture`: by its message. */
 export function fixtureCommit(copy: string, date: string): string {
-  return execFileSync('git', ['-C', copy, 'log', '--format=%H %cI'], { encoding: 'utf8' })
+  const line = execFileSync('git', ['-C', copy, 'log', '--format=%H %s'], { encoding: 'utf8' })
     .split('\n')
-    .find((line) => line.endsWith(` ${date}`))!
-    .split(' ')[0];
+    .find((entry) => entry.endsWith(` at ${date}`));
+  assert.ok(line, `no commit at ${date} in ${copy}`);
+  return line.split(' ')[0];
 }
