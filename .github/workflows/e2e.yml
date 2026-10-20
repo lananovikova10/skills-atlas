@@ -1,7 +1,11 @@
 # The web view in Chromium, compared to its screenshots to the pixel: in the Playwright image of the
 # version in package.json, the one the baselines are made in (update-baselines.yml).
+# Pushes to main and pull requests only, so a push to a pull request's branch runs it once.
 name: e2e
-on: [pull_request, push]
+on:
+  push:
+    branches: [main]
+  pull_request:
 permissions:
   contents: read
 concurrency:
