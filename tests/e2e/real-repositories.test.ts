@@ -1,6 +1,6 @@
 // End to end: the real ./skill-atlas on real GitHub repositories, each pinned to a commit so the
 // answer never changes. Needs the network and, in practice, GITHUB_TOKEN: without one GitHub
-// allows 60 requests an hour per address, and a run asks for about 30.
+// allows 60 requests an hour per address, and a run asks for about 140: one for each skill file's last update.
 // The expected output is in tests/e2e/expected; after changing a pin, record it again with
 //   ./skill-atlas scan github.com/JetBrains/<repo>/tree/<commit> > expected/<repo>.stdout 2> expected/<repo>.stderr
 import assert from 'node:assert/strict';
@@ -103,7 +103,7 @@ test('android: agent/skills is a root, and other files in a skill directory are 
   for (const link of links) assert.match(link, /\/agent\/skills\/[^/]+\/SKILL\.md$/);
   assert.ok(stdout.includes(`  https://github.com/JetBrains/android/blob/${ANDROID}/agent/skills/writing-lint-checks/SKILL.md`));
   // agent/skills/README.md, writing-lint-checks/more-examples.md, jewel-ui/THEMING.md… : not even ignored.
-  assert.equal(stdout.length, 1 + 6 * 2);
+  assert.equal(stdout.length, 1 + 6 * 3);
   assert.ok(!android.stderr.includes('ignored: '));
 });
 
@@ -124,6 +124,20 @@ test('koog: test data under integration-tests → not listed, one ignored: line 
     'ignored: integration-tests/src/jvmTest/resources/skills/arithmetic-evaluator/SKILL.md: outside the skill roots',
     'ignored: integration-tests/src/jvmTest/resources/skills/weather-retrieval/SKILL.md: outside the skill roots',
   ]);
+});
+
+test('the last update: the latest commit up to the pin that changed the skill directory, in any of its roots', () => {
+  // android at its pin: 4d9ec3e, 2026-09-21T15:13:26Z, is the last commit in agent/skills/writing-lint-checks.
+  const stdout = lines(android.stdout);
+  const at = stdout.findIndex((line) => line.startsWith('writing-lint-checks — '));
+  assert.equal(stdout[at + 2], '  updated 2026-09-21');
+  // Every skill has one, and none is unknown.
+  for (const run of [mps, android, koog]) {
+    const updated = lines(run.stdout).filter((line) => line.startsWith('  updated '));
+    assert.equal(updated.length, Number(/· (\d+) skills?$/.exec(lines(run.stdout)[0])?.[1]));
+    for (const line of updated) assert.match(line, /^  updated \d{4}-\d{2}-\d{2}$/);
+    assert.ok(!run.stderr.includes('last updated unknown'));
+  }
 });
 
 test('the same pin with the scheme and a trailing slash → the same atlas', () => {

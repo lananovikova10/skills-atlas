@@ -6,15 +6,17 @@ import { mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { test } from 'node:test';
+import { after, test } from 'node:test';
 import { findSkills } from '../src/core/find.ts';
 import { openGitHub, parseGitHubUrl } from '../src/core/github.ts';
 import { parseSkill } from '../src/core/parse.ts';
 import { replay } from '../src/core/replay.ts';
 import { scan } from '../src/core/scan.ts';
-import { atlas, CLI, EXAMPLE_COMMIT, FIXTURE } from './helpers.ts';
+import { atlas, CLI, commitAnswer, copyFixture, EXAMPLE_COMMIT, FIXTURE, lastCommitUrl } from './helpers.ts';
 
-const fixture = await atlas(['scan', FIXTURE]);
+// ./fixture as a git repository of its own, with known dates.
+const FIXTURE_COPY = copyFixture({ after });
+const fixture = await atlas(['scan', FIXTURE_COPY]);
 const example = await atlas(['scan', 'github.com/JetBrains/example']);
 
 test('malformed front matter → the directory name, no description and a warning', () => {
@@ -35,14 +37,15 @@ test('scan prints the repository, then each skill with its first sentence and pi
       'JetBrains/example · 1 skill',
       'commits — Write commit messages the way this repository does.',
       `  https://github.com/JetBrains/example/blob/${EXAMPLE_COMMIT}/.claude/skills/commits/SKILL.md`,
+      '  updated 2026-10-17',
     ].join('\n'),
   );
   // Found by code search, but never read: there is no raw answer for it.
   assert.equal(example.stderr, 'ignored: src/test/resources/skills/weather/SKILL.md: outside the skill roots');
 });
 
-test('./fixture: every unique skill, sorted by name, linked to its file, copies after it', () => {
-  const root = pathToFileURL(FIXTURE).href;
+test('./fixture: every unique skill, sorted by name, linked to its file, copies after it, then its last update', () => {
+  const root = pathToFileURL(FIXTURE_COPY).href;
   assert.equal(fixture.code, 0);
   assert.equal(
     fixture.stdout,
@@ -50,15 +53,20 @@ test('./fixture: every unique skill, sorted by name, linked to its file, copies 
       'fixture · 5 skills',
       'code-review — Review a change before it is merged.',
       `  ${root}/.claude/skills/reviewer/SKILL.md`,
+      '  updated 2026-02-10',
       "code-style — Follow the project's code style.",
       `  ${root}/.github/skills/code-style/SKILL.md`,
+      '  updated 2026-01-05',
       'commits — Write commit messages the way this repository does.',
       `  ${root}/.claude/skills/commits/SKILL.md`,
       '  also in .agents/skills/commits/SKILL.md, .github/skills/Commits/SKILL.md',
+      '  updated 2026-03-02',
       'release-checklist',
       `  ${root}/.agents/skills/release-checklist/SKILL.md`,
+      '  updated 2026-01-05',
       'writing-lint-checks — Write a lint check with its tests.',
       `  ${root}/agent/skills/writing-lint-checks/SKILL.md`,
+      '  updated 2026-01-05',
     ].join('\n'),
   );
   assert.match(fixture.stderr, /^warning: \.agents\/skills\/release-checklist\/SKILL\.md: malformed front matter: /m);
@@ -70,7 +78,7 @@ const stdout = fixture.stdout.split('\n');
 test('duplicate across roots → listed once, canonical .claude, the others as copies', () => {
   assert.equal(stdout.filter((line) => line.startsWith('commits')).length, 1);
   const at = stdout.indexOf('commits — Write commit messages the way this repository does.');
-  assert.equal(stdout[at + 1], `  ${pathToFileURL(FIXTURE).href}/.claude/skills/commits/SKILL.md`);
+  assert.equal(stdout[at + 1], `  ${pathToFileURL(FIXTURE_COPY).href}/.claude/skills/commits/SKILL.md`);
   assert.equal(stdout[at + 2], '  also in .agents/skills/commits/SKILL.md, .github/skills/Commits/SKILL.md');
 });
 
@@ -81,7 +89,7 @@ test('differing descriptions → a warning on the canonical file', () => {
 });
 
 test('agent/skills is a root', () => {
-  assert.ok(stdout.includes(`  ${pathToFileURL(FIXTURE).href}/agent/skills/writing-lint-checks/SKILL.md`));
+  assert.ok(stdout.includes(`  ${pathToFileURL(FIXTURE_COPY).href}/agent/skills/writing-lint-checks/SKILL.md`));
 });
 
 test('product resources, test data, nested, too deep, wrong case → not listed, one ignored: line each', () => {
@@ -138,7 +146,7 @@ test('findSkills: only <root>/<dir>/SKILL.md at the repository root, in root ord
 test('the CLI prints the result at once and stores nothing', (t) => {
   const cwd = mkdtempSync(join(tmpdir(), 'skill-atlas-'));
   t.after(() => rmSync(cwd, { recursive: true, force: true }));
-  const scanned = spawnSync(process.execPath, [CLI, 'scan', FIXTURE], { cwd, encoding: 'utf8' });
+  const scanned = spawnSync(process.execPath, [CLI, 'scan', FIXTURE_COPY], { cwd, encoding: 'utf8' });
   assert.equal(scanned.status, 0, scanned.stderr);
   assert.equal(scanned.stdout, `${fixture.stdout}\n`);
   assert.deepEqual(readdirSync(cwd), []);
@@ -203,10 +211,13 @@ test('a pinned commit → listed from its tree even with a token, since code sea
       status: 200,
       body: '---\nname: writing-lint-checks\ndescription: Helps to write a new lint check.\n---\n',
     },
+    // The last update is asked up to the pinned commit too.
+    [lastCommitUrl('JetBrains/android', pinned, 'agent/skills/writing-lint-checks')]: commitAnswer({ date: '2025-11-03T12:00:00Z', commit: 'c0ffee' }),
   });
   const result = await scan(await openGitHub(`github.com/JetBrains/android/tree/${pinned}`, { fetch: github, token: 'test' }));
   assert.equal(result.repository.commit, pinned);
   assert.deepEqual(result.skills.map((skill) => skill.path), ['agent/skills/writing-lint-checks/SKILL.md']);
+  assert.deepEqual(result.skills[0].lastUpdated, { date: '2025-11-03T12:00:00Z', commit: 'c0ffee' });
   assert.deepEqual(result.warnings, []);
 });
 

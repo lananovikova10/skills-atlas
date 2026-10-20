@@ -20,6 +20,8 @@ if (!token) {
 function keep(url: string, body: any): unknown {
   if (url.includes('/search/code?')) return { total_count: body.total_count, items: body.items.map(({ path }: { path: string }) => ({ path })) };
   if (url.includes('/commits/')) return { sha: body.sha };
+  // The last commit that changed a skill directory: its sha and date.
+  if (url.includes('/commits?')) return body.map(({ sha, commit }: any) => ({ sha, commit: { committer: { date: commit.committer.date } } }));
   if (/\/repos\/[^/]+\/[^/]+$/.test(url)) return { full_name: body.full_name, default_branch: body.default_branch };
   return body;
 }

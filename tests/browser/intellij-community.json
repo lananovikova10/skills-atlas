@@ -6,6 +6,1072 @@
    "default_branch": "master"
   }
  },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.agents/skills/actions&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "2b49a77dad4a69a364749b3728c87939d3dc1c14",
+    "commit": {
+     "committer": {
+      "date": "2026-07-23T15:01:59Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.agents/skills/bazel-test-migration&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "173b41af65c1c015aa49c0d7f4e41d984fc98a53",
+    "commit": {
+     "committer": {
+      "date": "2026-09-16T17:50:36Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.agents/skills/code-style&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "63c7791b8d33948b5a139549df44287b594305a3",
+    "commit": {
+     "committer": {
+      "date": "2026-10-07T13:24:13Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.agents/skills/commits&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "a702ce6e28b735595fccfe99c8ac55eb3f3c993f",
+    "commit": {
+     "committer": {
+      "date": "2026-10-11T18:20:59Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.agents/skills/compare-python-typecheckers&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "69288fa77ae97ff58874ca459fac10a0f7a8063a",
+    "commit": {
+     "committer": {
+      "date": "2026-08-18T20:18:41Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.agents/skills/conda-env-tests&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "0ad60e463da05cc63ae8c1a21d2dc37239fe2fa3",
+    "commit": {
+     "committer": {
+      "date": "2026-08-28T23:49:27Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.agents/skills/debugging&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "320151eb025c08549e8d0c48737b71305c395307",
+    "commit": {
+     "committer": {
+      "date": "2026-08-05T18:20:06Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.agents/skills/driver-ui-tests&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "69288fa77ae97ff58874ca459fac10a0f7a8063a",
+    "commit": {
+     "committer": {
+      "date": "2026-08-18T20:18:41Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.agents/skills/eel&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "fa5eed521b9da73da9bc60b557d4db6dc3f753ea",
+    "commit": {
+     "committer": {
+      "date": "2026-09-17T11:02:02Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.agents/skills/extract-module&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "f286d7d709a60f2b7c3de4cde329cb14f0e8885b",
+    "commit": {
+     "committer": {
+      "date": "2026-08-30T17:11:09Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.agents/skills/fix-project-leak-from-tc-report&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "69288fa77ae97ff58874ca459fac10a0f7a8063a",
+    "commit": {
+     "committer": {
+      "date": "2026-08-18T20:18:41Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.agents/skills/icon-resources&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "320151eb025c08549e8d0c48737b71305c395307",
+    "commit": {
+     "committer": {
+      "date": "2026-08-05T18:20:06Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.agents/skills/icons&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "69288fa77ae97ff58874ca459fac10a0f7a8063a",
+    "commit": {
+     "committer": {
+      "date": "2026-08-18T20:18:41Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.agents/skills/ide-diagnostics-mcp&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "69288fa77ae97ff58874ca459fac10a0f7a8063a",
+    "commit": {
+     "committer": {
+      "date": "2026-08-18T20:18:41Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.agents/skills/jewel-markdown&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "69288fa77ae97ff58874ca459fac10a0f7a8063a",
+    "commit": {
+     "committer": {
+      "date": "2026-08-18T20:18:41Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.agents/skills/jewel-release&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "009657514e6dcefcb9ae71f28ed29c7542de9157",
+    "commit": {
+     "committer": {
+      "date": "2026-10-19T20:55:57Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.agents/skills/jna&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "69288fa77ae97ff58874ca459fac10a0f7a8063a",
+    "commit": {
+     "committer": {
+      "date": "2026-08-18T20:18:41Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.agents/skills/kotlin-ui-dsl&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "69288fa77ae97ff58874ca459fac10a0f7a8063a",
+    "commit": {
+     "committer": {
+      "date": "2026-08-18T20:18:41Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.agents/skills/kotlin-ui-swing-component-architecture&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "320151eb025c08549e8d0c48737b71305c395307",
+    "commit": {
+     "committer": {
+      "date": "2026-08-05T18:20:06Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.agents/skills/markdown-library-update&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "cbfac51bf2e14eba9e2a55731f51b5625f5fbc33",
+    "commit": {
+     "committer": {
+      "date": "2026-10-19T14:58:35Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.agents/skills/modcommand-migration&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "d1a6bd9deb68cdd8c37f6d7cffa5d561d8fbf278",
+    "commit": {
+     "committer": {
+      "date": "2026-10-06T16:30:42Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.agents/skills/module-dependencies&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "b976f75d608b3f1dc39f77cc63e78cf92bd3eec0",
+    "commit": {
+     "committer": {
+      "date": "2026-09-30T16:14:36Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.agents/skills/module-set-pluginization&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "f13148b91d52e133021389fefb79debb3ad4e41d",
+    "commit": {
+     "committer": {
+      "date": "2026-10-03T21:13:15Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.agents/skills/notebook-for-experiment&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "69288fa77ae97ff58874ca459fac10a0f7a8063a",
+    "commit": {
+     "committer": {
+      "date": "2026-08-18T20:18:41Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.agents/skills/platform-coroutines-structured-concurrency&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "69288fa77ae97ff58874ca459fac10a0f7a8063a",
+    "commit": {
+     "committer": {
+      "date": "2026-08-18T20:18:41Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.agents/skills/plugin-model-analyzer&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "69288fa77ae97ff58874ca459fac10a0f7a8063a",
+    "commit": {
+     "committer": {
+      "date": "2026-08-18T20:18:41Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.agents/skills/poly-context&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "e305a9546d326b94c92f90b6eceb6439cab76636",
+    "commit": {
+     "committer": {
+      "date": "2026-10-14T17:17:31Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.agents/skills/poly-symbols&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "e305a9546d326b94c92f90b6eceb6439cab76636",
+    "commit": {
+     "committer": {
+      "date": "2026-10-14T17:17:31Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.agents/skills/pseudo-kmp&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "69288fa77ae97ff58874ca459fac10a0f7a8063a",
+    "commit": {
+     "committer": {
+      "date": "2026-08-18T20:18:41Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.agents/skills/py-code-insight-counters&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "b8ab18b9649b6f48ab6c52c597aa936aceb5706c",
+    "commit": {
+     "committer": {
+      "date": "2026-10-03T05:13:40Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.agents/skills/registry&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "2b49a77dad4a69a364749b3728c87939d3dc1c14",
+    "commit": {
+     "committer": {
+      "date": "2026-07-23T15:01:59Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.agents/skills/rust-code-style&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "3268ae77e244b1415c410ceef5115d04793b5497",
+    "commit": {
+     "committer": {
+      "date": "2026-10-14T10:41:45Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.agents/skills/safe-push&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "320151eb025c08549e8d0c48737b71305c395307",
+    "commit": {
+     "committer": {
+      "date": "2026-08-05T18:20:06Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.agents/skills/sibling-checkout-commits&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "d4c576210d58931eae43a3bccb7ad7f53c39eb65",
+    "commit": {
+     "committer": {
+      "date": "2026-10-01T20:13:15Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.agents/skills/ssr&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "69288fa77ae97ff58874ca459fac10a0f7a8063a",
+    "commit": {
+     "committer": {
+      "date": "2026-08-18T20:18:41Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.agents/skills/symbols-api&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "69288fa77ae97ff58874ca459fac10a0f7a8063a",
+    "commit": {
+     "committer": {
+      "date": "2026-08-18T20:18:41Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.agents/skills/testing-internals&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "bafcd8d8afe7a11da9c0fd9d38b39a2d126b032f",
+    "commit": {
+     "committer": {
+      "date": "2026-10-08T20:47:52Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.agents/skills/testing&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "bafcd8d8afe7a11da9c0fd9d38b39a2d126b032f",
+    "commit": {
+     "committer": {
+      "date": "2026-10-08T20:47:52Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.agents/skills/ui-accessibility&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "69288fa77ae97ff58874ca459fac10a0f7a8063a",
+    "commit": {
+     "committer": {
+      "date": "2026-08-18T20:18:41Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.agents/skills/writing-tests&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "c635000815c79698f1e609025a4c253ce13508ca",
+    "commit": {
+     "committer": {
+      "date": "2026-09-21T16:38:28Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.agents/skills/youtrack-community&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "b1a0f9d4638d8ad4a8cd3927c6fc2163c863996d",
+    "commit": {
+     "committer": {
+      "date": "2026-09-22T21:38:35Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.claude/skills/actions&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "2b49a77dad4a69a364749b3728c87939d3dc1c14",
+    "commit": {
+     "committer": {
+      "date": "2026-07-23T15:01:59Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.claude/skills/bazel-test-migration&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "173b41af65c1c015aa49c0d7f4e41d984fc98a53",
+    "commit": {
+     "committer": {
+      "date": "2026-09-16T17:50:36Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.claude/skills/code-style&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "63c7791b8d33948b5a139549df44287b594305a3",
+    "commit": {
+     "committer": {
+      "date": "2026-10-07T13:24:13Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.claude/skills/commits&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "a702ce6e28b735595fccfe99c8ac55eb3f3c993f",
+    "commit": {
+     "committer": {
+      "date": "2026-10-11T18:20:59Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.claude/skills/compare-python-typecheckers&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "69288fa77ae97ff58874ca459fac10a0f7a8063a",
+    "commit": {
+     "committer": {
+      "date": "2026-08-18T20:18:41Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.claude/skills/conda-env-tests&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "0ad60e463da05cc63ae8c1a21d2dc37239fe2fa3",
+    "commit": {
+     "committer": {
+      "date": "2026-08-28T23:49:27Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.claude/skills/debugging&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "320151eb025c08549e8d0c48737b71305c395307",
+    "commit": {
+     "committer": {
+      "date": "2026-08-05T18:20:06Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.claude/skills/driver-ui-tests&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "69288fa77ae97ff58874ca459fac10a0f7a8063a",
+    "commit": {
+     "committer": {
+      "date": "2026-08-18T20:18:41Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.claude/skills/eel&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "fa5eed521b9da73da9bc60b557d4db6dc3f753ea",
+    "commit": {
+     "committer": {
+      "date": "2026-09-17T11:02:02Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.claude/skills/extract-module&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "f286d7d709a60f2b7c3de4cde329cb14f0e8885b",
+    "commit": {
+     "committer": {
+      "date": "2026-08-30T17:11:09Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.claude/skills/fix-project-leak-from-tc-report&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "69288fa77ae97ff58874ca459fac10a0f7a8063a",
+    "commit": {
+     "committer": {
+      "date": "2026-08-18T20:18:41Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.claude/skills/icon-resources&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "320151eb025c08549e8d0c48737b71305c395307",
+    "commit": {
+     "committer": {
+      "date": "2026-08-05T18:20:06Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.claude/skills/icons&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "69288fa77ae97ff58874ca459fac10a0f7a8063a",
+    "commit": {
+     "committer": {
+      "date": "2026-08-18T20:18:41Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.claude/skills/ide-diagnostics-mcp&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "69288fa77ae97ff58874ca459fac10a0f7a8063a",
+    "commit": {
+     "committer": {
+      "date": "2026-08-18T20:18:41Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.claude/skills/jewel-markdown&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "69288fa77ae97ff58874ca459fac10a0f7a8063a",
+    "commit": {
+     "committer": {
+      "date": "2026-08-18T20:18:41Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.claude/skills/jewel-release&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "009657514e6dcefcb9ae71f28ed29c7542de9157",
+    "commit": {
+     "committer": {
+      "date": "2026-10-19T20:55:57Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.claude/skills/jna&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "69288fa77ae97ff58874ca459fac10a0f7a8063a",
+    "commit": {
+     "committer": {
+      "date": "2026-08-18T20:18:41Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.claude/skills/kotlin-ui-dsl&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "69288fa77ae97ff58874ca459fac10a0f7a8063a",
+    "commit": {
+     "committer": {
+      "date": "2026-08-18T20:18:41Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.claude/skills/kotlin-ui-swing-component-architecture&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "320151eb025c08549e8d0c48737b71305c395307",
+    "commit": {
+     "committer": {
+      "date": "2026-08-05T18:20:06Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.claude/skills/markdown-library-update&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "cbfac51bf2e14eba9e2a55731f51b5625f5fbc33",
+    "commit": {
+     "committer": {
+      "date": "2026-10-19T14:58:35Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.claude/skills/modcommand-migration&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "d1a6bd9deb68cdd8c37f6d7cffa5d561d8fbf278",
+    "commit": {
+     "committer": {
+      "date": "2026-10-06T16:30:42Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.claude/skills/module-dependencies&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "b976f75d608b3f1dc39f77cc63e78cf92bd3eec0",
+    "commit": {
+     "committer": {
+      "date": "2026-09-30T16:14:36Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.claude/skills/module-set-pluginization&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "f13148b91d52e133021389fefb79debb3ad4e41d",
+    "commit": {
+     "committer": {
+      "date": "2026-10-03T21:13:15Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.claude/skills/notebook-for-experiment&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "69288fa77ae97ff58874ca459fac10a0f7a8063a",
+    "commit": {
+     "committer": {
+      "date": "2026-08-18T20:18:41Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.claude/skills/platform-coroutines-structured-concurrency&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "69288fa77ae97ff58874ca459fac10a0f7a8063a",
+    "commit": {
+     "committer": {
+      "date": "2026-08-18T20:18:41Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.claude/skills/plugin-model-analyzer&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "69288fa77ae97ff58874ca459fac10a0f7a8063a",
+    "commit": {
+     "committer": {
+      "date": "2026-08-18T20:18:41Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.claude/skills/poly-context&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "e305a9546d326b94c92f90b6eceb6439cab76636",
+    "commit": {
+     "committer": {
+      "date": "2026-10-14T17:17:31Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.claude/skills/poly-symbols&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "e305a9546d326b94c92f90b6eceb6439cab76636",
+    "commit": {
+     "committer": {
+      "date": "2026-10-14T17:17:31Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.claude/skills/pseudo-kmp&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "69288fa77ae97ff58874ca459fac10a0f7a8063a",
+    "commit": {
+     "committer": {
+      "date": "2026-08-18T20:18:41Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.claude/skills/py-code-insight-counters&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "b8ab18b9649b6f48ab6c52c597aa936aceb5706c",
+    "commit": {
+     "committer": {
+      "date": "2026-10-03T05:13:40Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.claude/skills/registry&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "2b49a77dad4a69a364749b3728c87939d3dc1c14",
+    "commit": {
+     "committer": {
+      "date": "2026-07-23T15:01:59Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.claude/skills/rust-code-style&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "3268ae77e244b1415c410ceef5115d04793b5497",
+    "commit": {
+     "committer": {
+      "date": "2026-10-14T10:41:45Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.claude/skills/safe-push&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "320151eb025c08549e8d0c48737b71305c395307",
+    "commit": {
+     "committer": {
+      "date": "2026-08-05T18:20:06Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.claude/skills/sibling-checkout-commits&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "d4c576210d58931eae43a3bccb7ad7f53c39eb65",
+    "commit": {
+     "committer": {
+      "date": "2026-10-01T20:13:15Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.claude/skills/ssr&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "69288fa77ae97ff58874ca459fac10a0f7a8063a",
+    "commit": {
+     "committer": {
+      "date": "2026-08-18T20:18:41Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.claude/skills/symbols-api&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "69288fa77ae97ff58874ca459fac10a0f7a8063a",
+    "commit": {
+     "committer": {
+      "date": "2026-08-18T20:18:41Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.claude/skills/testing-internals&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "bafcd8d8afe7a11da9c0fd9d38b39a2d126b032f",
+    "commit": {
+     "committer": {
+      "date": "2026-10-08T20:47:52Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.claude/skills/testing&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "bafcd8d8afe7a11da9c0fd9d38b39a2d126b032f",
+    "commit": {
+     "committer": {
+      "date": "2026-10-08T20:47:52Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.claude/skills/ui-accessibility&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "69288fa77ae97ff58874ca459fac10a0f7a8063a",
+    "commit": {
+     "committer": {
+      "date": "2026-08-18T20:18:41Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.claude/skills/writing-tests&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "c635000815c79698f1e609025a4c253ce13508ca",
+    "commit": {
+     "committer": {
+      "date": "2026-09-21T16:38:28Z"
+     }
+    }
+   }
+  ]
+ },
+ "https://api.github.com/repos/JetBrains/intellij-community/commits?path=.claude/skills/youtrack-community&sha=589d822ef9798339478a958ccd13fd3826f78c00&per_page=1": {
+  "status": 200,
+  "body": [
+   {
+    "sha": "b1a0f9d4638d8ad4a8cd3927c6fc2163c863996d",
+    "commit": {
+     "committer": {
+      "date": "2026-09-22T21:38:35Z"
+     }
+    }
+   }
+  ]
+ },
  "https://api.github.com/repos/JetBrains/intellij-community/commits/master": {
   "status": 200,
   "body": {

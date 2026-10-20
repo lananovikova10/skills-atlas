@@ -30,7 +30,30 @@ export type Skill = {
   body: string;
   /** The warnings about this skill's files; they are in the scan's warnings too. */
   warnings: string[];
+  /** The newest of its files' last updates; null when none is known, or not looked up (an organization scan). */
+  lastUpdated: LastUpdated | null;
 };
+
+/** The most recent commit, up to the scanned commit, that changed a skill's directory. */
+export type LastUpdated = {
+  /** The commit date, ISO 8601. */
+  date: string;
+  commit: string;
+};
+
+/** The newest of the known dates, else null. */
+export function newest(updates: (LastUpdated | null | undefined)[]): LastUpdated | null {
+  let result: LastUpdated | null = null;
+  for (const update of updates) {
+    if (update && (!result || Date.parse(update.date) > Date.parse(result.date))) result = update;
+  }
+  return result;
+}
+
+/** `2026-10-17`, in UTC; `—` when it is not known. */
+export function formatDay(update: LastUpdated | null): string {
+  return update ? new Date(update.date).toISOString().slice(0, 10) : '—';
+}
 
 /**
  * The SKILL.md file, from where its repository is: on GitHub at the scanned commit,

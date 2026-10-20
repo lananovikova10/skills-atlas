@@ -1,7 +1,9 @@
+import { execFile, type ExecFileException } from 'node:child_process';
 import { readdir, readFile } from 'node:fs/promises';
 import { basename, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { AtlasError } from './core/errors.ts';
+import type { LastUpdated } from './core/model.ts';
 import type { Source } from './core/scan.ts';
 
 /** Never part of a repository's own files. */
@@ -22,7 +24,26 @@ export async function openDirectory(input: string): Promise<Source> {
     paths,
     warnings: [],
     read: (path) => readFile(join(root, path)).then((bytes) => new Uint8Array(bytes), () => undefined),
+    lastUpdated: (directory) => lastCommit(root, directory),
   };
+}
+
+/** `git log -1 HEAD -- <directory>`: the most recent commit that changed it. Without git, it rejects. */
+function lastCommit(root: string, directory: string): Promise<LastUpdated | undefined> {
+  const args = ['-C', root, 'log', '-1', '--format=%H %cI', 'HEAD', '--', directory];
+  return new Promise((resolve, reject) => {
+    execFile('git', args, { encoding: 'utf8' }, (error, stdout, stderr) => {
+      if (error) return reject(new Error(gitError(error, stderr)));
+      const [commit, date] = stdout.trim().split(' ');
+      resolve(commit && date ? { date, commit } : undefined);
+    });
+  });
+}
+
+function gitError(error: ExecFileException, stderr: string): string {
+  if (error.code === 'ENOENT') return 'git is not installed';
+  if (/not a git repository/i.test(stderr)) return 'not a git repository';
+  return stderr.trim().split('\n')[0].replace(/^fatal: /, '') || error.message;
 }
 
 /** Every regular file under the directory, as a path relative to the root. */
