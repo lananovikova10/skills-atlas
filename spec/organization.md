@@ -18,6 +18,8 @@ repository, as before ([cli.md](cli.md)). Tested by `tests/organization.test.ts`
 - The same skill definition as a single repository ([analysis.md](analysis.md))
 - The root tree first, not recursive; only the skill roots it has are listed. A repository without
   any is one request
+- A skill root too large for GitHub to list in one answer (a truncated tree) fails its repository:
+  `warning: <owner>/<repo>: cannot completely scan <root>: GitHub truncated the tree`
 - **8** repositories at a time; one request fails its repository after 30 s
 - Rate limits: a `403`/`429` with `retry-after`, or a spent budget (`x-ratelimit-remaining: 0`) that
   resets within a minute, is waited out and retried, up to 3 times. A later reset stops the scan:
