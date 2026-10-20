@@ -10,3 +10,6 @@
 - [github-token.mp4](github-token.mp4): the standalone page on JetBrains/koog, in Chromium against live GitHub:
   without a token, a token GitHub rejects, the user's own token (hidden as typed), then a reload that forgets it;
   the captions are added for the video ([spec/web.md](../../spec/web.md#github-token))
+- [standalone-token.mp4](standalone-token.mp4): the built standalone page on react/react, in Chromium against live
+  GitHub, with the user's token (hidden as typed): listed from the tree, no code search, so no CORS error; 7 skills,
+  then the graph ([spec/web.md](../../spec/web.md#standalone-page))

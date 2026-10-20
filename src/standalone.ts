@@ -19,7 +19,9 @@ export function standaloneFetch(live: Fetch): (input: string | URL | Request, in
     try {
       const token = bearer(new Headers(input instanceof Request ? input.headers : init?.headers).get('authorization'));
       // raw.githubusercontent.com cannot be sent a token from a page: the files come through the API.
-      return json(200, describeScan(await scan(await openGitHub(repo, { fetch: live, ...webToken(token, undefined), filesThroughApi: true }))));
+      // Nor can code search's answer be read: the files are listed from the tree.
+      const options = { fetch: live, ...webToken(token, undefined), filesThroughApi: true, codeSearch: false };
+      return json(200, describeScan(await scan(await openGitHub(repo, options))));
     } catch (error) {
       if (error instanceof AtlasError) return json(400, { error: error.message });
       return json(500, { error: `Unexpected error: ${error instanceof Error ? error.message : String(error)}` });

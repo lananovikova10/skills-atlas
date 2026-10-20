@@ -16,6 +16,11 @@ export type GitHubOptions = {
    * cannot send it a token, since it refuses the CORS preflight.
    */
   filesThroughApi?: boolean;
+  /**
+   * False: the files are listed from the tree even with a token. A browser cannot read code search's
+   * answer to a token: GitHub sends it without `Access-Control-Allow-Origin`.
+   */
+  codeSearch?: boolean;
   /** Cancels every request still running. */
   signal?: AbortSignal;
   /** Each request fails after this many milliseconds; none by default. */
@@ -89,9 +94,10 @@ export async function openGitHub(input: string, options: GitHubOptions): Promise
   );
   const warnings: string[] = [];
   // Code search sees only the default branch as it is now, so a pinned ref is always listed from its tree.
-  const paths = options.token && !name.ref
+  const search = options.codeSearch !== false && !name.ref;
+  const paths = options.token && search
     ? await searchPaths(github, id)
-    : await treePaths(github, id, sha, warnings, !name.ref && (options.tokenHelp ?? ENV_TOKEN));
+    : await treePaths(github, id, sha, warnings, search && (options.tokenHelp ?? ENV_TOKEN));
   const [organization, repo] = id.split('/');
   return {
     repository: { id, organization, name: repo, url: `https://github.com/${id}`, commit: sha },

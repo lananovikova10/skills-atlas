@@ -22,6 +22,8 @@ No `repo` or an `AtlasError` (unreachable repository, unknown commit, …) → 4
 - The styles, the scripts and Cytoscape are inline: no other file is loaded, and it opens from the disk
 - The page asks `/api/scan` as above; the page itself answers it, from live GitHub, with the page's token if any:
   then its files come through the contents API, since raw.githubusercontent.com refuses a token from a page
+- Listed from the **tree**, even with a token: GitHub answers code search with a token without
+  `Access-Control-Allow-Origin`, so a page cannot read it; a tree too large for one answer → the CLI's warning, no hint
 - A GitHub URL only: anything else → 400 `This standalone page scans GitHub repositories only: <input>`;
   no `repo` → 400 `Usage: /api/scan?repo=<GitHub URL>`; an `AtlasError` → 400 with its message
 - Every push to `main` runs the tests, builds it and publishes it on GitHub Pages (`.github/workflows/pages.yml`)
@@ -31,12 +33,13 @@ Without a token GitHub allows 60 API requests an hour per IP address; a user bri
   that it is used only to ask GitHub, and that it is not kept
 - **Analyse** sends it as `Authorization: Bearer <token>`; an empty field sends no header
 - *Nothing is stored*: not in the URL hash, so not in a shared link; not in storage; a reload forgets it
-- With a token, as in the CLI: GitHub's higher rate limit, code search over the default branch, private repositories
+- With a token, as in the CLI: GitHub's higher rate limit (5,000 requests an hour), private repositories, and with
+  `serve` code search over the default branch (the standalone page lists the tree)
 - `serve`: the page's token wins over `GITHUB_TOKEN`; an empty field → `GITHUB_TOKEN`, if set
 - Messages name the page's token, unless `serve` used `GITHUB_TOKEN`:
   - No token, the rate limit → `GitHub rate limit reached (resets at <time> UTC); add a GitHub token`
   - A token GitHub rejects (401) → `GitHub rejected the GitHub token`
-  - A tree too large for one answer → the CLI's warning, with `(a GitHub token searches everywhere)`
+  - A tree too large for one answer → the CLI's warning, with `(a GitHub token searches everywhere)` from `serve`
 ## Agents
 | Root | Agent |
 |---|---|
