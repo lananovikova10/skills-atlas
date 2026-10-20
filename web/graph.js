@@ -15,6 +15,8 @@ function style() {
         label: 'data(label)', color: text, 'font-size': 11, 'font-family': 'Roboto, system-ui, sans-serif',
         'text-valign': 'bottom', 'text-margin-y': 4, 'text-outline-color': surface, 'text-outline-width': 2,
         'background-color': 'data(color)', width: 18, height: 18,
+        // Too small to read when zoomed out: hidden until hovered, selected or zoomed in.
+        'min-zoomed-font-size': 9,
       },
     },
     { selector: 'node[kind = "repository"]', style: { 'background-color': token('--primary'), width: 44, height: 44, 'font-size': 14, 'font-weight': 500 } },
@@ -27,6 +29,7 @@ function style() {
     { selector: 'edge[kind = "tool"], edge[kind = "property"]', style: { 'line-style': 'dashed', width: 1 } },
     { selector: 'node:selected', style: { 'border-width': 3, 'border-color': token('--primary') } },
     { selector: '.faded', style: { opacity: 0.15 } },
+    { selector: 'node.hover', style: { 'min-zoomed-font-size': 0, 'font-size': 14, 'font-weight': 500, 'z-index': 10 } },
   ];
 }
 
@@ -37,15 +40,25 @@ export function createGraph(container, { onSelect }) {
   cy.on('mouseover', 'node', (event) => {
     const near = event.target.closedNeighborhood();
     cy.elements().not(near).addClass('faded');
+    event.target.addClass('hover');
+    container.style.cursor = event.target.data('kind') === 'skill' ? 'pointer' : '';
   });
-  cy.on('mouseout', 'node', () => cy.elements().removeClass('faded'));
+  cy.on('mouseout', 'node', () => {
+    cy.elements().removeClass('faded hover');
+    container.style.cursor = '';
+  });
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => cy.style(style()));
 
   return {
     render(repository, skills, options) {
       cy.elements().remove();
       cy.add(graphElements(repository, skills, options));
-      cy.layout({ name: 'cose', animate: false, nodeRepulsion: () => 9000, idealEdgeLength: () => 70, padding: 30, randomize: true }).run();
+      // Rings: the repository in the middle, then its agents, its skills, and what the skills share.
+      const level = { repository: 3, agent: 2, skill: 1, tool: 0, property: 0 };
+      cy.layout({
+        name: 'concentric', animate: false, padding: 30, minNodeSpacing: 28, startAngle: (3 / 2) * Math.PI,
+        concentric: (node) => level[node.data('kind')], levelWidth: () => 1,
+      }).run();
       cy.fit(undefined, 30);
     },
     fit: () => cy.fit(undefined, 30),

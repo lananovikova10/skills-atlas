@@ -140,25 +140,41 @@ export function graphElements(repository, skills, { tools = false, properties = 
 
 const escape = (text) => text.replace(/[&<>"']/g, (char) => `&#${char.charCodeAt(0)};`);
 
-function inline(text) {
+const unescape = (text) => text.replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code)));
+
+/** A link's target: http(s) as it is, a relative one against the skill file; anything else is not a link. */
+function resolve(href, base) {
+  try {
+    const url = new URL(unescape(href), base);
+    return ['http:', 'https:', 'file:'].includes(url.protocol) ? url.href : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function inline(text, base) {
   return escape(text)
     .replace(/`([^`]+)`/g, '<code>$1</code>')
     .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
     .replace(/(^|[^*])\*([^*\s][^*]*)\*/g, '$1<em>$2</em>')
-    .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+    .replace(/\[([^\]]+)\]\(([^\s)]+)\)/g, (link, label, href) => {
+      const url = /^[a-z][a-z0-9+.-]*:/i.test(href) && !/^https?:/i.test(href) ? undefined : resolve(href, base);
+      return url ? `<a href="${escape(url)}" target="_blank" rel="noopener">${label}</a>` : link;
+    });
 }
 
 /**
  * A small, safe subset of Markdown: headings, fenced code, lists, quotes and paragraphs, with
- * inline code, bold, italics and http(s) links. Everything else is text: HTML is escaped.
+ * inline code, bold, italics and links: http(s), or relative to `base`, the skill file's link.
+ * Everything else is text: HTML is escaped.
  */
-export function renderMarkdown(markdown) {
+export function renderMarkdown(markdown, base) {
   const out = [];
   const lines = markdown.split('\n');
   let paragraph = [];
   let list;
   const flush = () => {
-    if (paragraph.length) out.push(`<p>${inline(paragraph.join(' '))}</p>`);
+    if (paragraph.length) out.push(`<p>${inline(paragraph.join(' '), base)}</p>`);
     paragraph = [];
     if (list) out.push(`</${list}>`);
     list = undefined;
@@ -178,15 +194,15 @@ export function renderMarkdown(markdown) {
     if (heading) {
       flush();
       const level = Math.min(heading[1].length + 1, 6); // the sheet's title is the h2
-      out.push(`<h${level}>${inline(heading[2])}</h${level}>`);
+      out.push(`<h${level}>${inline(heading[2], base)}</h${level}>`);
     } else if (item) {
       const kind = item[1] ? 'ul' : 'ol';
       if (paragraph.length || list !== kind) flush();
       if (!list) out.push(`<${(list = kind)}>`);
-      out.push(`<li>${inline(item[2])}</li>`);
+      out.push(`<li>${inline(item[2], base)}</li>`);
     } else if (/^>\s?/.test(line)) {
       flush();
-      out.push(`<blockquote>${inline(line.replace(/^>\s?/, ''))}</blockquote>`);
+      out.push(`<blockquote>${inline(line.replace(/^>\s?/, ''), base)}</blockquote>`);
     } else if (!line.trim()) flush();
     else {
       if (list) flush();

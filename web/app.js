@@ -51,7 +51,7 @@ function showResult() {
   $('notes').textContent = notes.join('\n');
   $('notes').hidden = true;
   $('show-notes').hidden = notes.length === 0;
-  $('show-notes').textContent = `${warnings.length} warnings · ${ignored.length} ignored`;
+  $('show-notes').textContent = `${warnings.length} ${warnings.length === 1 ? 'warning' : 'warnings'} · ${ignored.length} ignored`;
   update();
 }
 
@@ -155,7 +155,7 @@ function openSheet(id) {
     skill.warnings.length ? [element('h4', {}, 'Warnings'), element('ul', {}, skill.warnings.map((text) => element('li', {}, text)))] : undefined,
     skill.body ? [element('h4', {}, 'Content'), (() => {
       const markdown = element('div', { class: 'markdown' });
-      markdown.innerHTML = renderMarkdown(skill.body); // escaped by renderMarkdown
+      markdown.innerHTML = renderMarkdown(skill.body, skill.link); // escaped by renderMarkdown
       return markdown;
     })()] : undefined,
   ].flat().filter(Boolean));

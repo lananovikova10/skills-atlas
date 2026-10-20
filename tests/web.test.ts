@@ -198,5 +198,18 @@ test('the sheet\'s Markdown: a safe subset, HTML shown as text', () => {
   );
   assert.equal(renderMarkdown('<img src=x onerror=alert(1)>'), '<p>&#60;img src=x onerror=alert(1)&#62;</p>');
   assert.equal(renderMarkdown('[x](javascript:alert(1))'), '<p>[x](javascript:alert(1))</p>');
-  assert.equal(renderMarkdown('[docs](https://example.com)'), '<p><a href="https://example.com" target="_blank" rel="noopener">docs</a></p>');
+  assert.equal(renderMarkdown('[docs](https://example.com)'), '<p><a href="https://example.com/" target="_blank" rel="noopener">docs</a></p>');
+  // Relative links point next to the skill file, at the scanned commit.
+  const base = `https://github.com/JetBrains/example/blob/${EXAMPLE_COMMIT}/.claude/skills/commits/SKILL.md`;
+  assert.equal(
+    renderMarkdown('[guide](../../docs/a b.md)', base),
+    '<p>[guide](../../docs/a b.md)</p>',
+  );
+  assert.equal(
+    renderMarkdown('See [guide](../../../docs/guide.md).', base),
+    `<p>See <a href="https://github.com/JetBrains/example/blob/${EXAMPLE_COMMIT}/docs/guide.md" target="_blank" rel="noopener">guide</a>.</p>`,
+  );
+  assert.equal(renderMarkdown('[x](data:text/html,hi)', base), '<p>[x](data:text/html,hi)</p>');
+  // Without a base, a relative link stays text.
+  assert.equal(renderMarkdown('[guide](docs/guide.md)'), '<p>[guide](docs/guide.md)</p>');
 });
