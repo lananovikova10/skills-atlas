@@ -58,10 +58,15 @@ The scripts import `playwright` and `@xterm/xterm`, so run them from `/tmp/demo-
 
    ```bash
    stty cols 150
+   # Linux (util-linux script): the command goes through -c, quoted as one argument
+   script -q /dev/null -c '<command>' < /dev/null | node /tmp/demo-rec/stamp.mjs > /tmp/demo-rec/run.json
+   # macOS (BSD script): the command follows the file
    script -q /dev/null <command> < /dev/null | node /tmp/demo-rec/stamp.mjs > /tmp/demo-rec/run.json
    ```
 
-   - **Not** `script -F /dev/stdout`: the output is written twice
+   - Check which `script` you have (`script --version` prints `util-linux` on Linux): util-linux
+     rejects a command after the file with `unexpected number of arguments`
+   - **Not** `script -F /dev/stdout` on macOS: the output is written twice
    - Check the capture: the final lines are there once, the progress line is there
 2. Replay and record it:
 
