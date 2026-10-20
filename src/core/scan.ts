@@ -1,4 +1,4 @@
-import { findSkills, type Ignored, type SkillFile } from './find.ts';
+import { findSkills, SKILL_ROOTS, type Ignored, type SkillFile } from './find.ts';
 import { sortSkills, type Repository, type Skill } from './model.ts';
 import { parseSkill } from './parse.ts';
 
@@ -30,12 +30,21 @@ export async function scan(source: Source): Promise<ScanResult> {
     groups.set(key, [...(groups.get(key) ?? []), skill]);
   }
   const skills: Skill[] = [];
-  for (const [canonical, ...copies] of groups.values()) {
+  for (const group of groups.values()) {
+    const [canonical, ...copies] = group;
+    const own = group.flatMap((skill) => skill.warnings);
     const differing = copies.filter((copy) => copy.description !== canonical.description);
     if (differing.length > 0) {
-      warnings.push(`${canonical.path}: description differs in ${differing.map((copy) => copy.path).join(', ')}`);
+      const warning = `${canonical.path}: description differs in ${differing.map((copy) => copy.path).join(', ')}`;
+      warnings.push(warning);
+      own.push(warning);
     }
-    skills.push({ ...canonical, copies: copies.map((copy) => copy.path) });
+    skills.push({
+      ...canonical,
+      copies: copies.map((copy) => copy.path),
+      roots: [...new Set(group.flatMap((skill) => skill.roots))],
+      warnings: own,
+    });
   }
   return { repository: source.repository, skills: sortSkills(skills), warnings, ignored };
 }
@@ -57,6 +66,10 @@ async function readSkill(source: Source, file: SkillFile): Promise<{ skill?: Ski
     description: parsed.description,
     commit: source.repository.commit,
     copies: [],
+    roots: [SKILL_ROOTS[file.rootIndex]],
+    properties: parsed.properties,
+    body: parsed.body,
+    warnings,
   };
   return { skill, warnings };
 }

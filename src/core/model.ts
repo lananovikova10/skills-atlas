@@ -22,6 +22,14 @@ export type Skill = {
   commit: string;
   /** The same skill, by name, in the other skill roots: their paths, in root order. */
   copies: string[];
+  /** The skill roots it is in, the canonical one first: `.claude/skills`, … */
+  roots: string[];
+  /** The other front matter keys of the canonical file. */
+  properties: Record<string, unknown>;
+  /** The canonical file's Markdown after the front matter. */
+  body: string;
+  /** The warnings about this skill's files; they are in the scan's warnings too. */
+  warnings: string[];
 };
 
 /**
