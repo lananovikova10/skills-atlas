@@ -32,3 +32,11 @@ jobs:
         run: |
           ./skill-atlas help
           ./skill-atlas scan ./fixture
+      # The web view, as a user would open it: the page and the scan of the fixture.
+      - name: Web view smoke test
+        run: |
+          ./skill-atlas serve --port 4173 &
+          for i in $(seq 1 20); do curl -fs http://127.0.0.1:4173/ > /dev/null && break; sleep 0.5; done
+          curl -fs http://127.0.0.1:4173/ | grep -q 'data-view="graph"'
+          curl -fs "http://127.0.0.1:4173/api/scan?repo=./fixture" | grep -q '"name":"commits"'
+          kill %1
