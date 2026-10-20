@@ -39,8 +39,22 @@ From the front matter, by who can invoke the skill:
 - Clicking a skill (card or node) opens its sheet: the full description, every front matter key,
   its files with agent and link, its warnings, its content (Markdown; HTML is shown as text)
 ## Filters
-- **Search**: every word in the name or description, case-insensitive
+- **Search**: live, over the scan already shown: no submit, no re-scan
 - Chips: **Agent**, **Type**, **Allowed tools**, **Front matter** (key present), **Other**:
   *In several agents*, *Has warnings*, *No description*
 - OR within a group, AND across groups; each chip counts the skills it would show
 - The repository, the view and the filters are in the URL hash: a reload or a shared link shows the same
+## Search
+- Over the skill's **name** and **description**; not its content or path. Case-insensitive substring;
+  the whitespace around the query is ignored
+- Several words: **every word** must match, in any order, in either field (`flag test` matches
+  *feature-flags*, "…feature flag tests fail…"); an empty query shows every skill
+- The list and the graph follow **every keystroke**, without Enter: under 100 ms for 500 skills, no debounce
+- AND with the chips; the chip counts are among the skills that match the search; a chip with 0 stays, disabled
+- While there is a query, the summary reads `Showing N of M skills`; it is `aria-live="polite"`
+- Nothing matches: *No skills match "<query>"* and **Clear search**, which keeps the chips;
+  chips alone that match nothing (from a link): *No skills match these filters.*
+- Cleared by the **✕** in the field, by `Esc` in the field, and with the chips by **Clear filters**
+- `q=` in the URL hash, next to `repo=`; analysing another repository keeps it
+- **Graph**: the skills that do not match are hidden, as with the chips
+- `/` focuses the field, unless focus is already in a text field
