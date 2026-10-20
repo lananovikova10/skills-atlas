@@ -1,8 +1,3 @@
----
-name: code-review-and-quality
-description: Conducts multi-axis code review. Use before merging any change. Use when reviewing code written by yourself, another agent, or a human. Use when you need to assess code quality across multiple dimensions before it enters the main branch. Use when asked to review a diff or a pull request, even when the diff is pasted inline.
----
-
 # Code Review and Quality
 
 ## Overview
@@ -133,7 +128,7 @@ Every change needs a description that stands alone in version control history.
 
 **First line:** Short, imperative, standalone. "Delete the FizzBuzz RPC" not "Deleting the FizzBuzz RPC." Must be informative enough that someone searching history can understand the change without reading the diff.
 
-**Body:** What is changing and why. Explain so even a rroduct manager can understand. Include context, decisions, and reasoning not visible in the code itself. Link to bug numbers, benchmark results, or design docs where relevant. Acknowledge approach shortcomings when they exist.
+**Body:** What is changing and why. Explain so even a product manager can understand. Include context, decisions, and reasoning not visible in the code itself. Link to bug numbers, benchmark results, or design docs where relevant. Acknowledge approach shortcomings when they exist.
 
 **Anti-patterns:** "Fix bug," "Fix build," "Add patch," "Moving code from A to B," "Phase 1," "Add convenience functions."
 
@@ -148,6 +143,16 @@ Before looking at code, understand the intent:
 - What spec or task does it implement?
 - What is the expected behavior change?
 ```
+
+For a pull request, load the PR, its diff, and existing review comments up front:
+
+```bash
+gh pr view <number> --json number,title,body,author,headRefOid,baseRefName,files
+gh pr diff <number>
+gh api repos/{owner}/{repo}/pulls/<number>/comments --paginate
+```
+
+Record `headRefOid` — every inline comment is pinned to that commit.
 
 ### Step 2: Review the Tests First
 
@@ -175,6 +180,8 @@ For each file changed:
 4. Security: Any vulnerabilities?
 5. Performance: Any bottlenecks?
 ```
+
+While reading, record each finding with its **file path and line number(s)** in the new version of the file. You need them in Step 6.
 
 ### Step 4: Categorize Findings
 
@@ -204,6 +211,97 @@ Check the author's verification story:
 - Is there a before/after comparison?
 ```
 
+### Step 6: Submit the Review with Inline Comments
+
+When the review target is a GitHub pull request, post the findings on the PR as **one review** with inline comments. When the diff was pasted inline or there is no PR, output the same comments in chat, each headed with `path:line`.
+
+**Placing each finding:**
+
+- A finding about specific code becomes an **inline comment** on that line.
+- Use the line number in the **new** file (`side: "RIGHT"`). For a finding about a deleted line, use the old line number with `side: "LEFT"`.
+- For a range, set `start_line` and `line` (both on the same side).
+- The line must be **inside a diff hunk**. GitHub rejects comments on unchanged lines outside the diff. Move such findings, and findings about the change as a whole (sizing, missing tests, architecture across files), into the review **summary**.
+- The same problem in several places → one inline comment on the first occurrence, listing the other locations. Don't repeat it.
+- Skip findings an existing review comment already raises. Reply to that thread instead if you have something to add.
+
+**Writing each inline comment:**
+
+- Start with the severity prefix from Step 4.
+- State the problem, why it matters, and the concrete fix (use a named remedy from Structural Remedies).
+- For a small, exact fix, include a GitHub suggestion block so the author can apply it in one click:
+
+  ````markdown
+  **Nit:** `data` doesn't say what this holds.
+
+  ```suggestion
+  const pendingTasks = await fetchPendingTasks(userId);
+  ```
+  ````
+
+  A suggestion replaces exactly the commented line(s), so its range must match them. Don't use suggestions for structural changes.
+
+**Choosing the review event:**
+
+| Findings | Event |
+|----------|-------|
+| Any **Critical** or Required (no prefix) | `REQUEST_CHANGES` |
+| Only Nit / Optional / FYI, or none | `APPROVE` |
+| Unsure, or not asked to give a verdict | `COMMENT` |
+
+GitHub doesn't allow `APPROVE` or `REQUEST_CHANGES` on your own PR. If the PR author is the authenticated account, use `COMMENT` and state the verdict in the summary.
+
+**Writing the summary body:**
+
+```markdown
+**Verdict:** Request changes — 1 critical, 2 required, 3 nits
+
+### Must fix
+- Critical: SQL built by string concatenation (`src/db/tasks.ts:42`)
+- Missing regression test for the empty-list case
+
+### Notes
+Findings that couldn't be placed inline, sizing, architecture.
+
+### Verification
+What was run and its result; any mutation that stayed green.
+```
+
+**Submitting:**
+
+Write the review to a JSON file and post it in a single call:
+
+```json
+{
+  "commit_id": "<headRefOid>",
+  "event": "REQUEST_CHANGES",
+  "body": "<summary body>",
+  "comments": [
+    {
+      "path": "src/db/tasks.ts",
+      "line": 42,
+      "side": "RIGHT",
+      "body": "**Critical:** Query is built by string concatenation…"
+    },
+    {
+      "path": "src/ui/TaskList.tsx",
+      "start_line": 10,
+      "line": 18,
+      "side": "RIGHT",
+      "body": "Repeated conditionals on `task.status`…"
+    }
+  ]
+}
+```
+
+```bash
+gh api repos/{owner}/{repo}/pulls/<number>/reviews --method POST --input review.json
+```
+
+- Post as one review, not as separate comments, so the author gets one notification and the verdict travels with the comments.
+- If GitHub returns `422` because a line can't be resolved, move that comment into the summary (keeping `path:line`) and resubmit. Don't drop it.
+- If the PR head has moved since you started (`headRefOid` changed), re-fetch the diff and re-check line numbers before submitting.
+- Unless the user asked you to post directly, show the draft review (verdict, summary, inline comments) and confirm before submitting. A posted review is public and notifies the author.
+
 ## Multi-Model Review Pattern
 
 Use different models for different review perspectives:
@@ -227,7 +325,8 @@ This catches issues that a single model might miss — different models have dif
 ```
 Review this code change for correctness, security, and adherence to
 our project conventions. The spec says [X]. The change should [Y].
-Flag any issues as Critical, Required, Optional, or Nit.
+Flag any issues as Critical, Required, Optional, or Nit, and post them
+as inline comments on PR #[N].
 ```
 
 ## Dead Code Hygiene
@@ -366,6 +465,7 @@ For triaging `npm audit` findings and supply-chain risk (typosquatting, compromi
 | "It's only a small addition to this file" | Small diffs still push files past a healthy size and bolt branches onto unrelated flows. Judge the resulting structure, not the diff size. |
 | "It's just a version bump" | A bump is a behavior change you didn't write. Read the changelog; semver doesn't guarantee no breakage. |
 | "I'll upgrade everything in one PR to save time" | A bulk bump that breaks the build hides which package did it. One dependency per change keeps the cause and the revert clean. |
+| "A summary comment is enough" | Findings without a file and line make the author hunt for them. Put each one where the code is. |
 
 ## Red Flags
 
@@ -383,6 +483,9 @@ For triaging `npm audit` findings and supply-chain risk (typosquatting, compromi
 - A bespoke helper that duplicates an existing canonical one, or feature logic placed in a shared module
 - A bulk "bump dependencies" PR with no changelog review and no per-package isolation
 - A lockfile change that's hand-edited, uncommitted, or merged without reviewing its diff
+- Code-specific findings left only in the summary instead of inline
+- Many separate single comments instead of one submitted review
+- The same issue commented on every occurrence instead of once with a list of locations
 
 ## Verification
 
@@ -394,5 +497,6 @@ After review is complete:
 - [ ] Build succeeds
 - [ ] The verification story is documented (what changed, how it was verified)
 - [ ] Dependency upgrades were reviewed against their changelog, isolated per package, and verified by a green suite with the lockfile diff reviewed
+- [ ] For a PR: the review was submitted once, pinned to the reviewed commit, with every code-specific finding inline and the rest in the summary
 
 **Presumptive blockers:** surface and propose the simpler design for each of these; escalate to Required only when the change actively makes structure worse: a refactor that relocates complexity instead of reducing it; a change that pushes a file past the size boundary with no decomposition; feature logic added to a shared module; a near-duplicate of an existing canonical helper; a silent fallback that hides an unclear invariant.
