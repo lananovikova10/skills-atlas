@@ -15,6 +15,14 @@ sorted by name, each with:
 - `invocation`, `tools`: see below; `warnings`: the warnings about its files
 
 No `repo` or an `AtlasError` (unreachable repository, unknown commit, …) → 400 `{ "error": <the CLI's message> }`.
+## Standalone page
+`npm run build:standalone [-- <directory>]` writes the same page as **one HTML file**, `dist/` by default:
+`skill-atlas-standalone.html`, and the same file as `index.html` for GitHub Pages.
+- The styles, the scripts and Cytoscape are inline: no other file is loaded, and it opens from the disk
+- The page asks `/api/scan` as above; the page itself answers it, from live GitHub without a token
+- A GitHub URL only: anything else → 400 `This standalone page scans GitHub repositories only: <input>`;
+  no `repo` → 400 `Usage: /api/scan?repo=<GitHub URL>`; an `AtlasError` → 400 with its message
+- Every push to `main` runs the tests, builds it and publishes it on GitHub Pages (`.github/workflows/pages.yml`)
 ## Agents
 | Root | Agent |
 |---|---|
