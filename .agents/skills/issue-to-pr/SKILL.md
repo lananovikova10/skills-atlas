@@ -1,6 +1,6 @@
 ---
 name: issue-to-pr
-description: Implement a GitHub issue end to end — read the issue and its specs, branch, plan, implement following project guidelines, run tests locally, and open a PR. Use when asked to work on, implement, or fix an issue by number or URL.
+description: Implement a GitHub issue end to end — read the issue and its specs, branch, plan, implement following project guidelines, run tests locally, record a demo video of a visible change, and open a PR. Use when asked to work on, implement, or fix an issue by number or URL.
 ---
 
 # Implement a GitHub issue
@@ -78,12 +78,25 @@ Run the same checks CI runs, typically in this order:
 - If a failure is pre-existing on the default branch and unrelated, confirm
   that by running it there, and mention it in the PR.
 
+## 6b. Record a demo — whenever the change is visible
+
+If a user can see the change (the CLI's output, the web page), record a short demo video of it with
+`.agents/skills/record-demo/SKILL.md`, showing the acceptance criteria on real input. Commit it in
+`docs/demo/<feature>.mp4`: replace the feature's video if it has one, and update `docs/demo/README.md`.
+
+- No demo for changes nobody can see: refactors, tests, CI, docs only
+- When it can't be recorded (no network, no browser, no ffmpeg), don't block on it: say why in the PR
+
 ## 7. Push and open the PR
 
 ```bash
 git push -u origin HEAD
 gh pr create --title "<type>: <summary> (#<number>)" --body-file <file>
 ```
+
+The Demo section links the video pinned to the pushed commit, so the link keeps working after merge:
+`https://github.com/<owner>/<repo>/blob/<commit>/docs/demo/<feature>.mp4`. GitHub's API cannot upload a
+video into the PR body itself, so it is a link.
 
 PR body:
 
@@ -99,6 +112,10 @@ What changed and why, in 2–4 sentences.
 
 ## Testing
 Commands run locally and their result.
+
+## Demo
+[<feature>.mp4](https://github.com/<owner>/<repo>/blob/<commit>/docs/demo/<feature>.mp4): what it shows,
+in one sentence. Or: why there is none.
 
 ## Notes
 Out-of-scope findings, follow-ups, pre-existing failures.

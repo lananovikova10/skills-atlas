@@ -209,7 +209,13 @@ Check the author's verification story:
 - Was the change tested manually?
 - Are there screenshots for UI changes?
 - Is there a before/after comparison?
+- A change a user can see: is there a demo video (the PR's Demo section, docs/demo/), or a reason why not?
+- Does the video show the code as it is now?
 ```
+
+A visible change with no demo and no reason given is a **Nit:** finding in the summary: AGENTS.md asks
+for one ([record-demo](../record-demo/SKILL.md)). A video that shows other behaviour than the code is
+a Required finding: it misleads whoever watches it.
 
 ### Step 6: Submit the Review with Inline Comments
 
@@ -496,6 +502,7 @@ After review is complete:
 - [ ] Tests pass
 - [ ] Build succeeds
 - [ ] The verification story is documented (what changed, how it was verified)
+- [ ] A visible change has a demo video that matches the code, or the PR says why not
 - [ ] Dependency upgrades were reviewed against their changelog, isolated per package, and verified by a green suite with the lockfile diff reviewed
 - [ ] For a PR: the review was submitted once, pinned to the reviewed commit, with every code-specific finding inline and the rest in the summary
 
