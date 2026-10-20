@@ -1,5 +1,5 @@
-// The demo docs/demo/search-filter.mp4 as a test: the steps of spec/web.md's Search and Filters, on
-// JetBrains/intellij-community at the recorded commit. Each step waits for its result on the page,
+// The demo docs/demo/search-filter.mp4 as a test: the steps of spec/web.md's Search, Filters and Sort, on
+// JetBrains/intellij-community at the recorded commit, with its recorded last updates. Each step waits for its result on the page,
 // never for a time; the pauses after it are for whoever watches the video, not for the page. After a
 // step's result, the page is compared to its screenshot in search-filter.spec.ts-snapshots/.
 import { DEMO_REPOSITORY } from './recording.ts';
@@ -7,6 +7,8 @@ import { expect, openPage, test } from './fonts.ts';
 
 const COMMIT = '589d822';
 const SKILLS = 41;
+/** The page's clock: the relative dates on the cards are the same in every run. */
+const NOW = new Date('2026-10-20T12:00:00Z');
 
 test('the bundled fonts are the ones the page renders with', async ({ page }) => {
   await openPage(page);
@@ -15,7 +17,7 @@ test('the bundled fonts are the ones the page renders with', async ({ page }) =>
   expect(await page.evaluate(() => document.fonts.check('14px Roboto') && document.fonts.check('13px "Roboto Mono"'))).toBe(true);
 });
 
-test('the demo: live search, the graph, a chip AND the search, Clear filters', async ({ page }) => {
+test('the demo: live search, the graph, a chip AND the search, Clear filters, sort by last updated', async ({ page }) => {
   // About 32 s of it are the pauses, as in the video.
   test.setTimeout(60_000);
   const watch = (ms: number) => page.waitForTimeout(ms);
@@ -25,6 +27,7 @@ test('the demo: live search, the graph, a chip AND the search, Clear filters', a
   const names = () => cards.locator('h3');
   const typeSearch = (text: string) => search.pressSequentially(text, { delay: 140 });
 
+  await page.clock.setFixedTime(NOW);
   await openPage(page);
   await watch(800);
 
@@ -36,6 +39,11 @@ test('the demo: live search, the graph, a chip AND the search, Clear filters', a
     await expect(summary).toHaveText(`${SKILLS} skills · ${COMMIT}`);
     await expect(cards).toHaveCount(SKILLS);
     await expect(page.locator('#show-notes')).toHaveText('0 warnings · 0 ignored');
+    // actions: last changed in .claude/skills/actions and .agents/skills/actions on 2026-07-23.
+    const updated = page.locator('.skill-item', { has: page.locator('h3', { hasText: /^actions$/ }) }).locator('a.updated');
+    await expect(updated).toHaveText('Updated 2 months ago');
+    await expect(updated).toHaveAttribute('title', '2026-07-23 15:01 UTC');
+    await expect(updated).toHaveAttribute('href', /^https:\/\/github\.com\/JetBrains\/intellij-community\/commit\/[0-9a-f]{40}$/);
     await expect(page).toHaveScreenshot('01-skill-list.png');
     await watch(2000);
   });
@@ -120,5 +128,21 @@ test('the demo: live search, the graph, a chip AND the search, Clear filters', a
     await expect(summary).toHaveText(`${SKILLS} skills · ${COMMIT}`);
     await expect(page).toHaveScreenshot('07-filters-cleared.png');
     await watch(1500);
+  });
+
+  await test.step('sort by last updated: newest first, with the search', async () => {
+    await page.selectOption('#sort', 'updated');
+    await expect(names().first()).toHaveText('jewel-release');
+    await expect(names().nth(1)).toHaveText('markdown-library-update');
+    await expect(cards.first().locator('..').locator('.updated')).toHaveText('Updated 15 hours ago');
+    await expect(page).toHaveURL(/sort=updated/);
+    await expect(page).toHaveScreenshot('08-sort-updated.png');
+    await watch(2500);
+    await search.focus();
+    await typeSearch('jewel');
+    // By name, jewel-markdown comes first; it was last changed two months before jewel-release.
+    await expect(names()).toHaveText(['jewel-release', 'jewel-markdown']);
+    await expect(page).toHaveScreenshot('09-sort-and-search.png');
+    await watch(2500);
   });
 });

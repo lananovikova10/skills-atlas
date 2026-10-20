@@ -85,11 +85,45 @@ export function facetLabel(key, value) {
   return value;
 }
 
-/** `repo=…&view=graph&q=…&agent=a,b`: what the page shows, so it can be shared and reloaded. */
+/**
+ * The skills in the chosen order. By name, they are as scanned; by last update, newest first,
+ * unknown dates last, and the same date by name.
+ */
+export function sortSkills(skills, sort) {
+  if (sort !== 'updated') return skills;
+  const time = (skill) => (skill.lastUpdated ? Date.parse(skill.lastUpdated.date) : -Infinity);
+  return [...skills].sort((a, b) => (time(a) === time(b) ? 0 : time(b) > time(a) ? 1 : -1));
+}
+
+const UNITS = [['year', 365 * 86400], ['month', 30 * 86400], ['day', 86400], ['hour', 3600], ['minute', 60]];
+
+/** `3 days ago`: the largest whole unit since the date; `just now` under a minute, or a date ahead of the clock. */
+export function relativeTime(date, now = Date.now()) {
+  const seconds = (now - Date.parse(date)) / 1000;
+  for (const [unit, size] of UNITS) {
+    if (seconds < size) continue;
+    const count = Math.floor(seconds / size);
+    return `${count} ${unit}${count === 1 ? '' : 's'} ago`;
+  }
+  return 'just now';
+}
+
+/** `2026-10-17 14:03 UTC`: the same on every machine. */
+export function absoluteTime(date) {
+  return `${new Date(date).toISOString().slice(0, 16).replace('T', ' ')} UTC`;
+}
+
+/** The commit on GitHub; a local directory's commit has no page. */
+export function commitLink(repository, commit) {
+  return repository.url.startsWith('https://github.com/') ? `${repository.url}/commit/${commit}` : undefined;
+}
+
+/** `repo=…&view=graph&sort=updated&q=…&agent=a,b`: what the page shows, so it can be shared and reloaded. */
 export function toHash(state) {
   const params = new URLSearchParams();
   if (state.repo) params.set('repo', state.repo);
   if (state.view && state.view !== 'list') params.set('view', state.view);
+  if (state.sort && state.sort !== 'name') params.set('sort', state.sort);
   if (state.filters.query) params.set('q', state.filters.query);
   for (const { key } of FACETS) {
     const values = state.filters[key] ?? [];
@@ -102,7 +136,12 @@ export function fromHash(hash) {
   const params = new URLSearchParams(hash.replace(/^#/, ''));
   const filters = { query: params.get('q') ?? '' };
   for (const { key } of FACETS) filters[key] = params.get(key)?.split('\n').filter(Boolean) ?? [];
-  return { repo: params.get('repo') ?? '', view: params.get('view') === 'graph' ? 'graph' : 'list', filters };
+  return {
+    repo: params.get('repo') ?? '',
+    view: params.get('view') === 'graph' ? 'graph' : 'list',
+    sort: params.get('sort') === 'updated' ? 'updated' : 'name',
+    filters,
+  };
 }
 
 /**

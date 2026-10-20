@@ -7,8 +7,9 @@ import { readFile } from 'node:fs/promises';
 import { registerHooks } from 'node:module';
 import { after, beforeEach, test } from 'node:test';
 import { GlobalRegistrator } from '@happy-dom/global-registrator';
+import type { Source } from '../src/core/scan.ts';
 import { startServer } from '../src/serve.ts';
-import { FIXTURE, open } from './helpers.ts';
+import { EXAMPLE_UPDATE, FIXTURE, open } from './helpers.ts';
 
 const CYTOSCAPE_STUB = `data:text/javascript,${encodeURIComponent(`
 export default function cytoscape() {
@@ -25,9 +26,25 @@ registerHooks({
     specifier === '/vendor/cytoscape.mjs' ? { url: CYTOSCAPE_STUB, shortCircuit: true } : next(specifier, context),
 });
 
+/** The fixture's last updates, in days before now, by directory; writing-lint-checks has none. */
+const DAYS_AGO: Record<string, number> = {
+  '.claude/skills/reviewer': 40,
+  '.github/skills/code-style': 3,
+  '.claude/skills/commits': 400,
+  '.agents/skills/commits': 10,
+  '.github/skills/Commits': 400,
+  '.agents/skills/release-checklist': 400,
+};
+const withDates = (source: Source): Source =>
+  source.repository.id !== 'fixture' ? source : {
+    ...source,
+    lastUpdated: async (directory) =>
+      directory in DAYS_AGO ? { date: new Date(Date.now() - DAYS_AGO[directory] * 86_400_000).toISOString(), commit: `c-${directory}` } : undefined,
+  };
+
 // The token each scan was asked with, as the server got it from the page.
 const tokens: (string | undefined)[] = [];
-const { server, url } = await startServer({ open: (input, token) => (tokens.push(token), open(input)), port: 0 });
+const { server, url } = await startServer({ open: async (input, token) => (tokens.push(token), withDates(await open(input))), port: 0 });
 after(async () => {
   await GlobalRegistrator.unregister();
   server.close();
@@ -297,4 +314,97 @@ test('page: nothing is stored: a reload forgets the token and scans without one'
   assert.deepEqual(tokens, [undefined]);
   assert.equal(localStorage.length, 0);
   assert.equal(sessionStorage.length, 0);
+});
+
+/** Each card's last update: its text, its tooltip and its link. */
+const updates = () =>
+  [...document.querySelectorAll('#list-view .skill-item .updated')].map((element) => ({
+    text: element.textContent,
+    title: element.getAttribute('title'),
+    href: element.getAttribute('href'),
+  }));
+
+const sortBy = (value: string) => {
+  const sort = $('sort') as unknown as HTMLSelectElement;
+  sort.value = value;
+  sort.dispatchEvent(new Event('change', { bubbles: true }));
+};
+
+test('page: each card shows when its skill was last updated, the absolute date on hover', () => {
+  const shown = updates();
+  assert.deepEqual(shown.map((update) => update.text), [
+    'Updated 1 month ago', // code-review, 40 days
+    'Updated 3 days ago', // code-style
+    'Updated 10 days ago', // commits: its copy in .agents, the latest of its three files
+    'Updated 1 year ago', // release-checklist, 400 days
+    'Last update unknown', // writing-lint-checks
+  ]);
+  assert.match(shown[1].title ?? '', /^\d{4}-\d{2}-\d{2} \d{2}:\d{2} UTC$/);
+  assert.equal(shown[4].title, null);
+  // A local directory's commit has no page to link to.
+  assert.ok(shown.every((update) => update.href === null));
+  // Not inside the card's button: a button cannot hold a link.
+  assert.equal(document.querySelector('.skill-card .updated'), null);
+});
+
+test('page: on GitHub, the date links to the commit', async () => {
+  $('repo').value = 'github.com/JetBrains/example';
+  $('repo-form').dispatchEvent(new Event('submit', { cancelable: true }));
+  await until(() => $('repo-link').textContent === 'JetBrains/example');
+  const [update] = updates();
+  assert.match(update.text ?? '', /^Updated (just now|\d+ (minute|hour|day|month|year)s? ago)$/);
+  assert.equal(update.title, '2026-10-17 09:30 UTC');
+  assert.equal(update.href, `https://github.com/JetBrains/example/commit/${EXAMPLE_UPDATE.commit}`);
+  const link = document.querySelector('#list-view a.updated');
+  assert.equal(link?.getAttribute('target'), '_blank');
+  assert.equal(link?.getAttribute('rel'), 'noopener');
+});
+
+test('page: Sort, by name by default, or by last update: newest first, unknown last', async () => {
+  const sort = $('sort') as unknown as HTMLSelectElement;
+  assert.equal(sort.closest('label')?.querySelector('.text-field-label')?.textContent, 'Sort');
+  assert.deepEqual([...sort.options].map((option) => [option.value, option.textContent]), [['name', 'Name'], ['updated', 'Last updated']]);
+  assert.equal(sort.value, 'name');
+  assert.deepEqual(listed(), ALL);
+  sortBy('updated');
+  assert.deepEqual(listed(), ['code-style', 'commits', 'code-review', 'release-checklist', 'writing-lint-checks']);
+  assert.equal(location.hash, hash('&sort=updated'));
+  sortBy('name');
+  assert.deepEqual(listed(), ALL);
+  assert.equal(location.hash, hash(''));
+  // The graph has no order: the control is the list's only.
+  assert.equal($('sort-field').hidden, false);
+  (globalThis as { graphElements?: unknown }).graphElements = undefined;
+  (document.querySelector('[data-view="graph"]') as HTMLButtonElement).click();
+  assert.equal($('sort-field').hidden, true);
+  await until(() => Boolean((globalThis as { graphElements?: unknown }).graphElements));
+});
+
+test('page: the sort combines with the search and the facets; Clear filters keeps it', () => {
+  sortBy('updated');
+  chips('Agent').get('Claude Code')?.element.click();
+  assert.deepEqual(listed(), ['commits', 'code-review']);
+  type('e');
+  assert.deepEqual(listed(), ['commits', 'code-review']);
+  chips('Agent').get('Claude Code')?.element.click();
+  assert.deepEqual(listed(), ['code-style', 'commits', 'code-review', 'release-checklist', 'writing-lint-checks']);
+  $('search').value = '';
+  type('lint');
+  assert.deepEqual(listed(), ['writing-lint-checks']);
+  $('clear-filters').click();
+  assert.equal(($('sort') as unknown as HTMLSelectElement).value, 'updated');
+  assert.deepEqual(listed(), ['code-style', 'commits', 'code-review', 'release-checklist', 'writing-lint-checks']);
+});
+
+test('page: the sort is in the URL hash; a reload restores it', async () => {
+  await load(hash('&sort=updated&q=commit'));
+  assert.equal(($('sort') as unknown as HTMLSelectElement).value, 'updated');
+  assert.deepEqual(listed(), ['code-style', 'commits']);
+  assert.equal(location.hash, hash('&sort=updated&q=commit'));
+});
+
+test('page: the sheet shows the last update too', () => {
+  (document.querySelector('#list-view .skill-card') as HTMLButtonElement).click();
+  assert.equal($('sheet-title').textContent, 'code-review');
+  assert.equal(document.querySelector('#sheet-body .sheet-updated')?.textContent, 'Updated 1 month ago');
 });

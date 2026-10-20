@@ -14,6 +14,7 @@ else `GITHUB_TOKEN` as in the CLI.
 - `files`: the canonical file, then its copies, each with `path`, `agent`, `link`
 - `roots`, `agents`: the skill roots it is in and their agents, canonical first
 - `invocation`, `tools`: see below; `warnings`: the warnings about its files
+- `lastUpdated`: `{ "date": "<ISO 8601>", "commit": "<sha>" }`, its [last update](analysis.md#last-updated), or `null`
 
 No `repo` or an `AtlasError` (unreachable repository, unknown commit, …) → 400 `{ "error": <the CLI's message> }`.
 ## Standalone page
@@ -58,7 +59,10 @@ From the front matter, by who can invoke the skill:
 - A **Repository** field and **Analyse**; the summary: `owner/repo`, `N skills`, the short commit,
   `N warnings · N ignored` (they open the stderr lines of the CLI)
 - Two views, switched in the top bar, both filtered the same way:
-  - **List**: a card per skill: name, the description's first sentence, agents, type, warnings
+  - **List**: a card per skill: name, the description's first sentence, agents, type, warnings, and
+    `Updated 3 days ago`: the largest whole unit (minutes, hours, days, months of 30 days, years), `just now` under a
+    minute; its tooltip the absolute date, `2026-10-17 14:03 UTC`; on GitHub, a link to the commit
+    (`https://github.com/<owner>/<repo>/commit/<sha>`, a new tab); unknown → `Last update unknown`. The sheet shows it too
   - **Graph** (Cytoscape): the repository → its agents → their skills, colored by canonical agent;
     switches add the **allowed tools** and **front matter keys** as nodes shared by skills
 - Clicking a skill (card or node) opens its sheet: the full description, every front matter key,
@@ -69,6 +73,11 @@ From the front matter, by who can invoke the skill:
   *In several agents*, *Has warnings*, *No description*
 - OR within a group, AND across groups; each chip counts the skills it would show
 - The repository, the view and the filters are in the URL hash: a reload or a shared link shows the same
+## Sort
+- A **Sort** control at the right of the summary, for the list (hidden with the graph): *Name*, the default, or
+  *Last updated*: newest first, the same date by name, unknown dates last
+- It orders what the search and the chips show; **Clear filters** keeps it
+- `sort=updated` in the URL hash; *Name* is not written there
 ## Search
 - Over the skill's **name** and **description**; not its content or path. Case-insensitive substring;
   the whitespace around the query is ignored
