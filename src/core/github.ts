@@ -85,6 +85,7 @@ export async function openDefaultBranch(github: Client, id: string, branch: stri
     const sha = await subtree(github, id, root, path);
     if (!sha) continue;
     const tree = await github.json<Tree>(`${API}/repos/${id}/git/trees/${sha}?recursive=1`);
+    if (tree.truncated) throw new AtlasError(`cannot completely scan ${path}: GitHub truncated the tree`);
     paths.push(...files(tree).map((file) => `${path}/${file}`));
   }
   return {
