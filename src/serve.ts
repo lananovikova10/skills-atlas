@@ -5,7 +5,9 @@ import { createServer, type Server } from 'node:http';
 import { fileURLToPath } from 'node:url';
 import { AtlasError } from './core/errors.ts';
 import { describeScan } from './core/facets.ts';
+import { bearer, openGitHub, parseGitHubUrl, webToken, type Fetch } from './core/github.ts';
 import { scan, type Source } from './core/scan.ts';
+import { openDirectory } from './local.ts';
 
 const WEB = new URL('../web/', import.meta.url);
 const CYTOSCAPE = new URL('../node_modules/cytoscape/dist/cytoscape.esm.min.mjs', import.meta.url);
@@ -21,11 +23,17 @@ const FILES: Record<string, { url: URL; type: string }> = {
 };
 
 export type ServeOptions = {
-  /** Opens what the user asked to scan, as the CLI does. */
-  open(input: string): Promise<Source>;
+  /** Opens what the user asked to scan, as the CLI does; with the token given in the page, if any. */
+  open(input: string, token?: string): Promise<Source>;
   /** 0 picks a free port. */
   port: number;
 };
+
+/** What `serve` opens: a GitHub URL with the page's token, else `envToken` (GITHUB_TOKEN); or a directory. */
+export function openFromPage({ fetch, envToken }: { fetch: Fetch; envToken?: string }): ServeOptions['open'] {
+  return (input, pageToken) =>
+    parseGitHubUrl(input) ? openGitHub(input, { fetch, ...webToken(pageToken, envToken) }) : openDirectory(input);
+}
 
 /** Starts the server; resolves to it and its URL once it listens. */
 export async function startServer({ open, port }: ServeOptions): Promise<{ server: Server; url: string }> {
@@ -42,7 +50,7 @@ export async function startServer({ open, port }: ServeOptions): Promise<{ serve
       const repo = url.searchParams.get('repo')?.trim();
       if (!repo) return json(400, { error: 'Usage: /api/scan?repo=<GitHub URL | directory>' });
       try {
-        return json(200, describeScan(await scan(await open(repo))));
+        return json(200, describeScan(await scan(await open(repo, bearer(request.headers.authorization)))));
       } catch (error) {
         if (error instanceof AtlasError) return json(400, { error: error.message });
         return json(500, { error: `Unexpected error: ${error instanceof Error ? error.message : String(error)}` });

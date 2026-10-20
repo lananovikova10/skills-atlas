@@ -21,7 +21,8 @@ the skills, a live search and filters by agent, type, allowed tools and front ma
 `https://github.com/<owner>` scans every repository of an organization or a user into one list, skipping
 archived repositories and forks unless `--include-archived` / `--include-forks`; see [spec/organization.md](spec/organization.md).
 
-Set `GITHUB_TOKEN` for a higher GitHub rate limit. `npm test` runs the tests; `npm run test:e2e` runs the
+Set `GITHUB_TOKEN` for a higher GitHub rate limit; in the web view, and on the standalone page, the
+**GitHub token** field does the same, for that page only. `npm test` runs the tests; `npm run test:e2e` runs the
 CLI on real repositories at pinned commits (network, `GITHUB_TOKEN`).
 
 - [spec/](spec/): what it does. [AGENTS.md](AGENTS.md): the definition of done.
