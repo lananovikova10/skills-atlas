@@ -148,6 +148,7 @@ App commit `<sha>` · Chromium <version> · viewport <w×h> · mocked API: yes/n
 - Never file without a repro test that failed twice for the same reason.
 - Never put tokens, cookies, or personal data in issues, videos, or screenshots.
 - Test only the local web view and mocked APIs. Never attack GitHub or another real service.
+- Do not set `Delegated to AI` label yourself.
 
 ## 10. Report
 
