@@ -63,7 +63,7 @@ For every candidate:
 1. **Minimize** the steps that show it.
 2. Write a repro at `tests/browser/red-agent/<slug>.spec.ts` asserting the *expected* behaviour, so it fails now and passes once fixed. Use mocked responses for deterministic cases.
 3. Run that test twice in fresh browser contexts. Both runs must fail for the same reason. If it fails only sometimes, note it as flaky in the run summary and do not file it.
-4. Keep a failing-run video and a screenshot of the broken state locally (Playwright writes them under `test-results/`); list their paths in the run summary.
+4. Keep a failing-run video and a screenshot of the broken state locally, and list their paths in the run summary. Playwright records the video (`video: 'on'` in `playwright.config.ts`) but takes no screenshot by itself, so the repro takes one just before the failing assertion: `await page.screenshot({ path: testInfo.outputPath('broken.png') })`. Run the repro with `npx playwright test tests/browser/red-agent/<slug>.spec.ts --output test-results/red-agent/<slug>`: Playwright empties its output directory at the start of every run, and a directory per bug keeps one bug's repro from deleting another's video and screenshot.
 
 The same root cause in several places is one bug, listing every affected place.
 
