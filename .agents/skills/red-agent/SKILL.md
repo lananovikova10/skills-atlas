@@ -63,7 +63,7 @@ For every candidate:
 1. **Minimize** the steps that show it.
 2. Write a repro at `tests/browser/red-agent/<slug>.spec.ts` asserting the *expected* behaviour, so it fails now and passes once fixed. Use mocked responses for deterministic cases.
 3. Run that test twice in fresh browser contexts. Both runs must fail for the same reason. If it fails only sometimes, note it as flaky in the run summary and do not file it.
-4. Keep a failing-run video and a screenshot of the broken state.
+4. Keep a failing-run video and a screenshot of the broken state locally, and list their paths in the run summary. Playwright records the video (`video: 'on'` in `playwright.config.ts`) but takes no screenshot by itself, so the repro takes one just before the failing assertion: `await page.screenshot({ path: testInfo.outputPath('broken.png') })`. Run the repro with `npx playwright test tests/browser/red-agent/<slug>.spec.ts --output test-results/red-agent/<slug>`: Playwright empties its output directory at the start of every run, and a directory per bug keeps one bug's repro from deleting another's video and screenshot.
 
 The same root cause in several places is one bug, listing every affected place.
 
@@ -75,22 +75,9 @@ Search before filing:
 gh issue list --state all --search "<2-4 key words>" --json number,title,state
 ```
 
-Compare the result with the `red-agent` issues from step 1. For an open match, add a comment with the new evidence instead of filing. For a closed match, file a regression issue and link the old one.
+Compare the result with the `red-agent` issues from step 1. For an open match, add a comment with the new repro steps and test instead of filing. For a closed match, file a regression issue and link the old one.
 
-## 7. Publish the evidence
-
-The GitHub API cannot attach files to issues. Commit videos and screenshots to the dedicated `red-agent-evidence` branch and link them. Use a separate worktree so switching to the evidence branch does not disturb repro tests or the current branch. Create an orphan branch when it does not exist; otherwise fetch and continue it. Never force-push or put repro tests on the evidence branch.
-
-```bash
-mkdir -p bugs/<slug>
-cp <video>.webm <screenshot>.png bugs/<slug>/
-git add bugs/<slug> && git commit -m "evidence: <slug>"
-git push origin red-agent-evidence
-```
-
-Run these commands **inside the evidence worktree**. Link each file as `https://github.com/<owner>/<repo>/blob/red-agent-evidence/bugs/<slug>/<file>`.
-
-## 8. File one issue per bug
+## 7. File one issue per bug
 
 Ensure the `red-agent` label exists (`gh label create red-agent` if missing). `Delegated to AI` must already exist; do not create it.
 
@@ -118,10 +105,6 @@ What should happen. Cite the spec or issue (#n) when there is one.
 ## Actual
 What happens instead. Include console errors verbatim.
 
-## Evidence
-- Video: <link>
-- Screenshot: <link>
-
 ## Repro test
 Fails now, passes when fixed. Add it to `tests/browser/` as part of the fix.
 
@@ -140,16 +123,16 @@ App commit `<sha>` · Chromium <version> · viewport <w×h> · mocked API: yes/n
 - Security bugs (XSS, token leaks): file with `bug`, `red-agent`, and `security` but **without** `Delegated to AI`, and leave out a working exploit payload. A human decides.
 - Bugs needing a product decision (the spec is silent or contradictory): file with `bug` and `red-agent`, without `Delegated to AI`, and state what needs deciding.
 
-## 9. Limits and guardrails
+## 8. Limits and guardrails
 
 - File at most **5 issues** per run, highest severity first: data loss or wrong data, crashes, broken core flows, then layout. List remaining findings in the run summary.
 - Do not change application code or open PRs during a bug-hunting run.
-- Never commit to the default branch. Evidence goes to `red-agent-evidence`.
+- Never commit to the default branch, create branches, or push during a run.
 - Never file without a repro test that failed twice for the same reason.
 - Never put tokens, cookies, or personal data in issues, videos, or screenshots.
 - Test only the local web view and mocked APIs. Never attack GitHub or another real service.
 - Do not set `Delegated to AI` label yourself.
 
-## 10. Report
+## 9. Report
 
-End with charters covered, issue links, duplicates commented on, flaky or unfiled findings, and charters not reached.
+End with charters covered, issue links, local paths to each bug's video and screenshot, duplicates commented on, flaky or unfiled findings, and charters not reached.
