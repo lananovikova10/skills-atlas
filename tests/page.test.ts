@@ -1,7 +1,8 @@
 /// <reference lib="dom" />
 // The page itself, web/app.js, in a simulated browser (happy-dom) against the real server over
 // ./fixture: the live search as a user types, clears and reloads it. Cytoscape is replaced by a
-// stub that keeps what the graph was given; the graph's elements are tested in web.test.ts.
+// stub that keeps what the graph or the map was given; the graph's elements are tested in web.test.ts.
+// The map's model is answered from tests/model, the full model's rows for these skills' tokens.
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { registerHooks } from 'node:module';
@@ -9,14 +10,31 @@ import { after, beforeEach, test } from 'node:test';
 import { GlobalRegistrator } from '@happy-dom/global-registrator';
 import { startServer } from '../src/serve.ts';
 import { AGENT_COLORS, AGENT_LOGOS } from '../web/atlas.js';
+import { MODEL } from '../web/embed.js';
 import { FIXTURE, open } from './helpers.ts';
+
+// The model's files, from tests/model; what the page asked Hugging Face, and whether it answers.
+const MODEL_FILES = new URL('model/', import.meta.url);
+const NodeResponse = Response;
+const modelAsked: string[] = [];
+let modelAnswers = true;
+async function answerModel(url: string) {
+  modelAsked.push(url.slice(MODEL.length));
+  if (!modelAnswers) return new NodeResponse('', { status: 503, statusText: 'Service Unavailable' });
+  return new NodeResponse(await readFile(new URL(url.slice(MODEL.length), MODEL_FILES)));
+}
 
 const CYTOSCAPE_STUB = `data:text/javascript,${encodeURIComponent(`
 export default function cytoscape() {
   const none = { remove() {}, removeClass() {}, not: () => ({ addClass() {} }) };
+  let added = [];
   return {
-    on() {}, style() {}, fit() {}, resize() {},
-    add(elements) { globalThis.graphElements = elements; },
+    on() {}, style() {}, fit() {}, resize() {}, center() {}, zoom: () => 1,
+    add(elements) { globalThis.graphElements = elements; globalThis.adds = (globalThis.adds ?? 0) + 1; added = elements; globalThis.faded = new Set(); },
+    nodes: () => ({ forEach: (each) => added.filter((element) => element.data.kind === 'skill').forEach((element) => each({
+      data: (key) => element.data[key],
+      toggleClass: (name, on) => (on ? globalThis.faded.add(element.data.label) : globalThis.faded.delete(element.data.label)),
+    })) }),
     elements: () => none,
     layout: () => ({ run() {} }),
   };
@@ -49,6 +67,11 @@ const hash = (query: string) => `#repo=${encodeURIComponent(FIXTURE)}${query}`;
 async function load(at: string) {
   if (GlobalRegistrator.isRegistered) await GlobalRegistrator.unregister();
   GlobalRegistrator.register({ url: `${url}${at}` });
+  const pageFetch = globalThis.fetch;
+  globalThis.fetch = ((input: string, init?: RequestInit) =>
+    String(input).startsWith(MODEL) ? answerModel(String(input)) : pageFetch(input, init)) as typeof fetch;
+  modelAsked.length = 0;
+  modelAnswers = true;
   document.documentElement.innerHTML = page;
   await import(`${app}?load=${++loads}`);
   await until(() => !$('result').hidden);
@@ -377,4 +400,95 @@ test('page: the search\'s words are highlighted in the name and the description,
   assert.equal(card('code-review').querySelector('p')?.innerHTML, '<mark>Review</mark> a change before it is merged.');
   press($('search'), 'Escape');
   assert.equal(document.querySelectorAll('#list-view mark').length, 0);
+});
+
+const map = globalThis as { graphElements?: { data: { kind: string; label: string; topic?: number } }[]; adds?: number; faded?: Set<string> };
+const view = (name: string) => (document.querySelector(`[data-view="${name}"]`) as HTMLButtonElement).click();
+const mapReady = () => until(() => !$('map').hidden);
+const points = () => (map.graphElements ?? []).filter(({ data }) => data.kind === 'skill').map(({ data }) => data.label);
+
+test('map: the model is downloaded only when the map is opened, once per page', async () => {
+  view('graph');
+  view('list');
+  assert.deepEqual(modelAsked, []);
+  view('map');
+  assert.equal($('map-status').textContent, 'Downloading the model, potion-base-8M (30 MB)…');
+  assert.equal($('map').hidden, true);
+  await mapReady();
+  assert.deepEqual(modelAsked, ['vocab.txt', 'model.safetensors']);
+  view('list');
+  view('map');
+  assert.deepEqual(modelAsked, ['vocab.txt', 'model.safetensors']);
+  assert.equal(location.hash, hash('&view=map'));
+});
+
+test('map: every skill a point with its topic, the topics labelled, in the legend and in Topic chips first', async () => {
+  await load(hash('&view=map'));
+  await mapReady();
+  assert.deepEqual(points(), [...ALL].sort());
+  const topics = (map.graphElements ?? []).filter(({ data }) => data.kind === 'topic').map(({ data }) => data.label);
+  assert.ok(topics.length >= 1);
+  assert.equal($('map-status').textContent, `5 skills in ${topics.length} ${topics.length === 1 ? 'topic' : 'topics'}, placed by what they say they do`);
+  assert.deepEqual([...$('map-legend').querySelectorAll('span')].slice(0, -1).map((span) => span.textContent), topics);
+  assert.equal(document.querySelector('#facets .facet h3')?.textContent, 'Topic');
+  assert.deepEqual([...chips('Topic').keys()].sort(), [...topics].sort());
+  assert.equal([...chips('Topic').values()].reduce((sum, { count }) => sum + count, 0), 5);
+});
+
+test('map: the search and the chips fade the other skills; nothing moves; nothing matches → the empty state', async () => {
+  await load(hash('&view=map'));
+  await mapReady();
+  const adds = map.adds;
+  type('commit');
+  assert.deepEqual([...(map.faded ?? [])].sort(), ['code-review', 'release-checklist', 'writing-lint-checks']);
+  assert.equal(map.adds, adds); // the same layout, only faded
+  chips('Agent').get('Claude Code')?.element.click();
+  assert.deepEqual([...(map.faded ?? [])].sort(), ['code-review', 'code-style', 'release-checklist', 'writing-lint-checks']);
+  type('zzz');
+  assert.equal($('map-view').hidden, true);
+  assert.equal($('empty').hidden, false);
+});
+
+test('map: a Topic chip filters every view, and a link with topic= builds the map from the list', async () => {
+  await load(hash('&view=map'));
+  await mapReady();
+  const [topic, { count }] = [...chips('Topic')][0];
+  chips('Topic').get(topic)?.element.click();
+  view('list');
+  assert.equal(listed().length, count);
+  const link = location.hash;
+  assert.match(link, /topic=/);
+  await load(link.replace('&view=map', ''));
+  assert.ok(modelAsked.length > 0);
+  await until(() => listed().length === count);
+  assert.equal(chips('Topic').get(topic)?.element.getAttribute('aria-pressed'), 'true');
+});
+
+test('map: the sheet lists the most similar skills, each opening its own sheet', async () => {
+  (document.querySelector('#list-view .skill-card') as HTMLButtonElement).click();
+  assert.ok(![...document.querySelectorAll('#sheet-body h4')].some((h4) => h4.textContent === 'Similar skills'));
+  view('map');
+  await mapReady();
+  view('list');
+  (document.querySelector('#list-view .skill-card') as HTMLButtonElement).click();
+  assert.equal($('sheet-title').textContent, 'code-review');
+  const similar = [...document.querySelectorAll('#sheet-body .similar button')] as HTMLButtonElement[];
+  assert.equal(similar.length, 4);
+  assert.deepEqual(similar.map((button) => button.textContent).sort(), ALL.filter((name) => name !== 'code-review').sort());
+  assert.ok(similar.every((button) => /^\d+% similar$/.test(button.title)));
+  const first = similar[0].textContent;
+  similar[0].click();
+  assert.equal($('sheet-title').textContent, first);
+});
+
+test('map: the model cannot be downloaded → the reason; the next scan tries again', async () => {
+  modelAnswers = false;
+  view('map');
+  await until(() => $('map-status').classList.contains('error'));
+  assert.equal($('map-status').textContent, 'Could not build the map: Could not download the model: vocab.txt: 503 Service Unavailable');
+  assert.equal($('map').hidden, true);
+  modelAnswers = true;
+  $('repo-form').dispatchEvent(new Event('submit', { cancelable: true }));
+  await mapReady();
+  assert.equal($('map-status').classList.contains('error'), false);
 });

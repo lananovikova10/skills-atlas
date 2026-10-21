@@ -8,6 +8,12 @@
   each with its logo and count, each card's accent and hover, then the search highlighted in the cards
   (`commit`, with the **Claude Code** chip, then `review pull`) and **Clear filters**
   ([spec/web.md](../../spec/web.md#list)). Recorded with Playwright in the Playwright image
+- [skill-map.mp4](skill-map.mp4): `./skill-atlas serve` on JetBrains/intellij-community: the **Map**, its model
+  downloaded only then; 41 skills in 6 topics; a topic fades the others, the search AND the topic, on the map
+  and in the list; a skill's **Similar skills**; **Clear filters** ([spec/web.md](../../spec/web.md#map)).
+  The video of [tests/browser/map.spec.ts](../../tests/browser/map.spec.ts): intellij-community at 589d822,
+  replayed from a recording of GitHub's answers, the model's rows for its skills from tests/model;
+  `npm run test:browser` records it again
 - [organization-scan.mp4](organization-scan.mp4): `./skill-atlas scan https://github.com/anthropics`: the progress
   line, then every repository's skills in one list ([spec/organization.md](../../spec/organization.md)).
   A real run replayed in a terminal; waits over 1.5 s are shortened

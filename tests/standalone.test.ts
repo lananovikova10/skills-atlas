@@ -40,7 +40,13 @@ test('standalone: skill-atlas-standalone.html and the same index.html', async ()
   assert.equal(await readFile(join(out, 'index.html'), 'utf8'), html);
   assert.match(html, /data-view="list"/);
   assert.match(html, /data-view="graph"/);
+  assert.match(html, /data-view="map"/);
   assert.match(html, /id="repo"/);
+});
+
+test('standalone: the map is inline too; only its model comes from Hugging Face, at the pinned commit', () => {
+  assert.match(html, /potion-base-8M\/resolve\/bf8b056651a2c21b8d2565580b8569da283cab23\//);
+  assert.match(html, /Placing /);
 });
 
 test('standalone: the styles, the scripts and Cytoscape are inline; no other file is loaded', () => {

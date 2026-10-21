@@ -19,6 +19,9 @@ const FILES: Record<string, { url: URL; type: string }> = {
   '/app.js': { url: new URL('app.js', WEB), type: 'text/javascript; charset=utf-8' },
   '/atlas.js': { url: new URL('atlas.js', WEB), type: 'text/javascript; charset=utf-8' },
   '/graph.js': { url: new URL('graph.js', WEB), type: 'text/javascript; charset=utf-8' },
+  '/embed.js': { url: new URL('embed.js', WEB), type: 'text/javascript; charset=utf-8' },
+  '/map.js': { url: new URL('map.js', WEB), type: 'text/javascript; charset=utf-8' },
+  '/mapview.js': { url: new URL('mapview.js', WEB), type: 'text/javascript; charset=utf-8' },
   '/vendor/cytoscape.mjs': { url: CYTOSCAPE, type: 'text/javascript; charset=utf-8' },
 };
 
