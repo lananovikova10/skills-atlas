@@ -52,6 +52,7 @@ Write a short plan before implementing:
 - How each acceptance criterion will be met
 - Tests to add or update for each criterion
 - What is explicitly **out of scope**
+- If the issue leaves the decision open, like open question aout the implementation, ask it in Slack workspace Workspace id zt-4ds34pmeq-cJroj7iv3Uyu5oK3N~3Zfw in a Channel id C0CAR4MBCF5 and check every 3 minutes for replies within next 60 minutes. If there are no answer - make decision yourself. Once you read the reply put the ✅ emoji on the reply.
 
 Keep the change to what the issue asks for. Note unrelated problems you
 notice for a follow-up instead of fixing them here.

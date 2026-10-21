@@ -18,6 +18,11 @@
             <path d="M17 14a3 3 0 0 0-2.4 1.2l-5.3-2.6a3 3 0 0 0 0-1.2l5.3-2.6A3 3 0 1 0 14 7c0 .2 0 .4.1.6L8.8 10.2a3 3 0 1 0 0 3.6l5.3 2.6A3 3 0 1 0 17 14z" />
           </svg>Graph
         </button>
+        <button role="tab" data-view="map" aria-selected="false">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M7 14a3 3 0 1 0 0 6 3 3 0 0 0 0-6zm4-10a3 3 0 1 0 0 6 3 3 0 0 0 0-6zm5.6 8.4a3 3 0 1 0 0 6 3 3 0 0 0 0-6z" />
+          </svg>Map
+        </button>
       </div>
     </header>
 
@@ -71,7 +76,7 @@
           </aside>
 
           <div class="content">
-            <div id="list-view" class="skill-grid"></div>
+            <div id="list-view" class="skill-groups"></div>
             <div id="graph-view" hidden>
               <div class="graph-toolbar">
                 <label class="switch"><input type="checkbox" id="graph-tools" /><span></span>Allowed tools</label>
@@ -80,6 +85,14 @@
               </div>
               <div id="graph" class="card"></div>
               <div class="graph-legend" id="graph-legend"></div>
+            </div>
+            <div id="map-view" hidden>
+              <div class="graph-toolbar">
+                <span class="map-status" id="map-status" role="status"></span>
+                <button class="button text" type="button" id="map-fit">Fit</button>
+              </div>
+              <div id="map" class="card"></div>
+              <div class="graph-legend" id="map-legend"></div>
             </div>
             <div class="empty" id="empty" hidden>
               <p id="empty-text">No skills match these filters.</p>

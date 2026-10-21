@@ -1,7 +1,8 @@
 /// <reference lib="dom" />
 // The page itself, web/app.js, in a simulated browser (happy-dom) against the real server over
 // ./fixture: the live search as a user types, clears and reloads it. Cytoscape is replaced by a
-// stub that keeps what the graph was given; the graph's elements are tested in web.test.ts.
+// stub that keeps what the graph or the map was given; the graph's elements are tested in web.test.ts.
+// The map's model is answered from tests/model, the full model's rows for these skills' tokens.
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { registerHooks } from 'node:module';
@@ -9,14 +10,32 @@ import { after, beforeEach, test } from 'node:test';
 import { GlobalRegistrator } from '@happy-dom/global-registrator';
 import type { Source } from '../src/core/scan.ts';
 import { startServer } from '../src/serve.ts';
+import { AGENT_COLORS, AGENT_LOGOS } from '../web/atlas.js';
+import { MODEL } from '../web/embed.js';
 import { EXAMPLE_UPDATE, FIXTURE, open } from './helpers.ts';
+
+// The model's files, from tests/model; what the page asked Hugging Face, and whether it answers.
+const MODEL_FILES = new URL('model/', import.meta.url);
+const NodeResponse = Response;
+const modelAsked: string[] = [];
+let modelAnswers = true;
+async function answerModel(url: string) {
+  modelAsked.push(url.slice(MODEL.length));
+  if (!modelAnswers) return new NodeResponse('', { status: 503, statusText: 'Service Unavailable' });
+  return new NodeResponse(await readFile(new URL(url.slice(MODEL.length), MODEL_FILES)));
+}
 
 const CYTOSCAPE_STUB = `data:text/javascript,${encodeURIComponent(`
 export default function cytoscape() {
   const none = { remove() {}, removeClass() {}, not: () => ({ addClass() {} }) };
+  let added = [];
   return {
-    on() {}, style() {}, fit() {}, resize() {},
-    add(elements) { globalThis.graphElements = elements; },
+    on() {}, style() {}, fit() {}, resize() {}, center() {}, zoom: () => 1,
+    add(elements) { globalThis.graphElements = elements; globalThis.adds = (globalThis.adds ?? 0) + 1; added = elements; globalThis.faded = new Set(); },
+    nodes: () => ({ forEach: (each) => added.filter((element) => element.data.kind === 'skill').forEach((element) => each({
+      data: (key) => element.data[key],
+      toggleClass: (name, on) => (on ? globalThis.faded.add(element.data.label) : globalThis.faded.delete(element.data.label)),
+    })) }),
     elements: () => none,
     layout: () => ({ run() {} }),
   };
@@ -57,13 +76,19 @@ const page = (await readFile(new URL('../web/index.html', import.meta.url), 'utf
 const app = new URL('../web/app.js', import.meta.url).href;
 let loads = 0;
 
-const ALL = ['code-review', 'code-style', 'commits', 'release-checklist', 'writing-lint-checks'];
+// In the list's order: grouped by agents (Claude Code; all three; Codex; GitHub Copilot; Custom agent).
+const ALL = ['code-review', 'commits', 'release-checklist', 'code-style', 'writing-lint-checks'];
 const hash = (query: string) => `#repo=${encodeURIComponent(FIXTURE)}${query}`;
 
 /** Opens the page at `#<hash>`, as a reload or a shared link does, and waits for its scan. */
 async function load(at: string) {
   if (GlobalRegistrator.isRegistered) await GlobalRegistrator.unregister();
   GlobalRegistrator.register({ url: `${url}${at}` });
+  const pageFetch = globalThis.fetch;
+  globalThis.fetch = ((input: string, init?: RequestInit) =>
+    String(input).startsWith(MODEL) ? answerModel(String(input)) : pageFetch(input, init)) as typeof fetch;
+  modelAsked.length = 0;
+  modelAnswers = true;
   document.documentElement.innerHTML = page;
   await import(`${app}?load=${++loads}`);
   await until(() => !$('result').hidden);
@@ -120,9 +145,9 @@ test('page: typing filters the list on every keystroke, without Enter', () => {
   // `c` is in every name; `co` and `com` also match "committing" in code-style's description.
   assert.deepEqual(shown, [
     ALL,
-    ['code-review', 'code-style', 'commits'],
-    ['code-style', 'commits'],
-    ['code-style', 'commits'],
+    ['code-review', 'commits', 'code-style'],
+    ['commits', 'code-style'],
+    ['commits', 'code-style'],
   ]);
   assert.equal($('summary-text').textContent, 'Showing 2 of 5 skills');
 });
@@ -296,7 +321,7 @@ test('page: Analyse sends the token to the scan; never in the URL hash', async (
   assert.ok(!location.hash.includes('ghp_secret'), location.hash);
   assert.ok(!location.href.includes('ghp_secret'), location.href);
   assert.equal(location.hash, hash('&q=commit'));
-  assert.deepEqual(listed(), ['code-style', 'commits']);
+  assert.deepEqual(listed(), ['commits', 'code-style']);
   assert.equal($('token').value, ' ghp_secret ');
 });
 
@@ -316,6 +341,28 @@ test('page: nothing is stored: a reload forgets the token and scans without one'
   assert.equal(sessionStorage.length, 0);
 });
 
+/** The list's groups: title (its text) → the names of its cards. */
+const groups = () => [...document.querySelectorAll('#list-view .skill-group')].map((group) => [
+  group.querySelector('.group-title')?.textContent,
+  [...group.querySelectorAll('.skill-card h3')].map((title) => title.textContent),
+]);
+
+/** The agents whose logos an element shows, by their path, and in which color. */
+const logos = (element: Element) => [...element.querySelectorAll('svg.logo')].map((svg) => {
+  const d = svg.querySelector('path')?.getAttribute('d');
+  return [Object.keys(AGENT_LOGOS).find((agent) => AGENT_LOGOS[agent as keyof typeof AGENT_LOGOS] === d), svg.getAttribute('style')];
+});
+
+const card = (name: string) => [...document.querySelectorAll('#list-view .skill-card')].find((element) => element.querySelector('h3')?.textContent === name) as HTMLElement;
+
+/** A card's highlighted parts: the text of each <mark> in its name and in its description. */
+const marks = (name: string) => [...card(name).querySelectorAll('h3 mark, p mark')].map((mark) => mark.textContent);
+
+const map = globalThis as { graphElements?: { data: { kind: string; label: string; topic?: number } }[]; adds?: number; faded?: Set<string> };
+const view = (name: string) => (document.querySelector(`[data-view="${name}"]`) as HTMLButtonElement).click();
+const mapReady = () => until(() => !$('map').hidden);
+const points = () => (map.graphElements ?? []).filter(({ data }) => data.kind === 'skill').map(({ data }) => data.label);
+
 /** Each card's last update: its text, its tooltip and its link. */
 const updates = () =>
   [...document.querySelectorAll('#list-view .skill-item .updated')].map((element) => ({
@@ -334,12 +381,12 @@ test('page: each card shows when its skill was last updated, the absolute date o
   const shown = updates();
   assert.deepEqual(shown.map((update) => update.text), [
     'Updated 1 month ago', // code-review, 40 days
-    'Updated 3 days ago', // code-style
     'Updated 10 days ago', // commits: its copy in .agents, the latest of its three files
     'Updated 1 year ago', // release-checklist, 400 days
+    'Updated 3 days ago', // code-style
     'Last update unknown', // writing-lint-checks
   ]);
-  assert.match(shown[1].title ?? '', /^\d{4}-\d{2}-\d{2} \d{2}:\d{2} UTC$/);
+  assert.match(shown[3].title ?? '', /^\d{4}-\d{2}-\d{2} \d{2}:\d{2} UTC$/);
   assert.equal(shown[4].title, null);
   // A local directory's commit has no page to link to.
   assert.ok(shown.every((update) => update.href === null));
@@ -360,46 +407,53 @@ test('page: on GitHub, the date links to the commit', async () => {
   assert.equal(link?.getAttribute('rel'), 'noopener');
 });
 
-test('page: Sort, by name by default, or by last update: newest first, unknown last', async () => {
+test('page: Sort, by name by default, or by last update within each group; the groups stay', async () => {
   const sort = $('sort') as unknown as HTMLSelectElement;
   assert.equal(sort.closest('label')?.querySelector('.text-field-label')?.textContent, 'Sort');
   assert.deepEqual([...sort.options].map((option) => [option.value, option.textContent]), [['name', 'Name'], ['updated', 'Last updated']]);
   assert.equal(sort.value, 'name');
   assert.deepEqual(listed(), ALL);
+  const byName = groups();
+  // The fixture has one skill per group: the order within a group is tested in web.test.ts.
   sortBy('updated');
-  assert.deepEqual(listed(), ['code-style', 'commits', 'code-review', 'release-checklist', 'writing-lint-checks']);
+  assert.deepEqual(groups(), byName);
   assert.equal(location.hash, hash('&sort=updated'));
   sortBy('name');
   assert.deepEqual(listed(), ALL);
   assert.equal(location.hash, hash(''));
-  // The graph has no order: the control is the list's only.
+  // The graph and the map have no order: the control is the list's only.
   assert.equal($('sort-field').hidden, false);
   (globalThis as { graphElements?: unknown }).graphElements = undefined;
-  (document.querySelector('[data-view="graph"]') as HTMLButtonElement).click();
+  view('graph');
   assert.equal($('sort-field').hidden, true);
   await until(() => Boolean((globalThis as { graphElements?: unknown }).graphElements));
+  view('map');
+  assert.equal($('sort-field').hidden, true);
+  await mapReady();
+  view('list');
+  assert.equal($('sort-field').hidden, false);
 });
 
 test('page: the sort combines with the search and the facets; Clear filters keeps it', () => {
   sortBy('updated');
   chips('Agent').get('Claude Code')?.element.click();
-  assert.deepEqual(listed(), ['commits', 'code-review']);
+  assert.deepEqual(listed(), ['code-review', 'commits']);
   type('e');
-  assert.deepEqual(listed(), ['commits', 'code-review']);
+  assert.deepEqual(listed(), ['code-review', 'commits']);
   chips('Agent').get('Claude Code')?.element.click();
-  assert.deepEqual(listed(), ['code-style', 'commits', 'code-review', 'release-checklist', 'writing-lint-checks']);
+  assert.deepEqual(listed(), ALL);
   $('search').value = '';
   type('lint');
   assert.deepEqual(listed(), ['writing-lint-checks']);
   $('clear-filters').click();
   assert.equal(($('sort') as unknown as HTMLSelectElement).value, 'updated');
-  assert.deepEqual(listed(), ['code-style', 'commits', 'code-review', 'release-checklist', 'writing-lint-checks']);
+  assert.deepEqual(listed(), ALL);
 });
 
 test('page: the sort is in the URL hash; a reload restores it', async () => {
   await load(hash('&sort=updated&q=commit'));
   assert.equal(($('sort') as unknown as HTMLSelectElement).value, 'updated');
-  assert.deepEqual(listed(), ['code-style', 'commits']);
+  assert.deepEqual(listed(), ['commits', 'code-style']);
   assert.equal(location.hash, hash('&sort=updated&q=commit'));
 });
 
@@ -407,4 +461,151 @@ test('page: the sheet shows the last update too', () => {
   (document.querySelector('#list-view .skill-card') as HTMLButtonElement).click();
   assert.equal($('sheet-title').textContent, 'code-review');
   assert.equal(document.querySelector('#sheet-body .sheet-updated')?.textContent, 'Updated 1 month ago');
+});
+
+test('page: the list is grouped by agents, in root order, each skill in one group, with a count', () => {
+  assert.deepEqual(groups(), [
+    ['Claude Code1', ['code-review']],
+    ['Claude Code+Codex / AGENTS.md+GitHub Copilot1', ['commits']],
+    ['Codex / AGENTS.md1', ['release-checklist']],
+    ['GitHub Copilot1', ['code-style']],
+    ['Custom agent1', ['writing-lint-checks']],
+  ]);
+  const titles = [...document.querySelectorAll('#list-view .group-title')];
+  assert.deepEqual([...titles[1].querySelectorAll('.plus')].map((plus) => plus.textContent), ['+', '+']);
+  assert.deepEqual([...document.querySelectorAll('#list-view .group-title .count')].map((count) => count.textContent), ['1', '1', '1', '1', '1']);
+  assert.equal(document.querySelectorAll('#list-view .skill-card').length, 5);
+});
+
+test('page: the groups follow the search and the chips; a group with no skill is not shown', () => {
+  type('commit');
+  assert.deepEqual(groups(), [
+    ['Claude Code+Codex / AGENTS.md+GitHub Copilot1', ['commits']],
+    ['GitHub Copilot1', ['code-style']],
+  ]);
+  chips('Agent').get('Claude Code')?.element.click();
+  assert.deepEqual(groups(), [['Claude Code+Codex / AGENTS.md+GitHub Copilot1', ['commits']]]);
+  type('zzz');
+  assert.equal(document.querySelectorAll('#list-view .skill-group').length, 0);
+});
+
+test('page: each agent has its logo, in its color: group titles, cards, Agent chips, the sheet', () => {
+  const color = (agent: keyof typeof AGENT_COLORS) => `color:${AGENT_COLORS[agent]}`;
+  const all = [['Claude Code', color('Claude Code')], ['Codex / AGENTS.md', color('Codex / AGENTS.md')], ['GitHub Copilot', color('GitHub Copilot')]];
+  const titles = [...document.querySelectorAll('#list-view .group-title')];
+  assert.deepEqual(logos(titles[1]), all);
+  // The custom agent's logo is the one for any other agent.
+  assert.deepEqual(logos(titles[4]), [['other', color('Custom agent')]]);
+  assert.deepEqual(logos(card('commits').querySelector('.tags') as Element), all);
+  assert.deepEqual(logos(chips('Agent').get('GitHub Copilot')?.element as Element), [['GitHub Copilot', color('GitHub Copilot')]]);
+  card('commits').click();
+  assert.deepEqual(logos($('sheet-body').querySelector('.files') as Element), all);
+});
+
+test('page: a card\'s accent is its canonical agent\'s color', () => {
+  assert.equal(card('commits').style.getPropertyValue('--accent'), AGENT_COLORS['Claude Code']);
+  assert.equal(card('code-style').style.getPropertyValue('--accent'), AGENT_COLORS['GitHub Copilot']);
+  assert.equal(card('writing-lint-checks').style.getPropertyValue('--accent'), AGENT_COLORS['Custom agent']);
+});
+
+test('page: the search\'s words are highlighted in the name and the description, as typed and cleared', () => {
+  assert.deepEqual(marks('commits'), []);
+  type('COMM');
+  // Every place, in either field; the text keeps its case.
+  assert.deepEqual(marks('commits'), ['comm', 'comm']);
+  assert.equal(card('commits').querySelector('h3')?.innerHTML, '<mark>comm</mark>its');
+  assert.equal(card('code-style').querySelector('h3')?.innerHTML, 'code-style');
+  $('search').value = '';
+  type(' pull  review ');
+  assert.equal(card('code-review').querySelector('h3')?.innerHTML, 'code-<mark>review</mark>');
+  // Only what the card shows: "pull" is in the description's second sentence, not on the card.
+  assert.equal(card('code-review').querySelector('p')?.innerHTML, '<mark>Review</mark> a change before it is merged.');
+  press($('search'), 'Escape');
+  assert.equal(document.querySelectorAll('#list-view mark').length, 0);
+});
+
+test('map: the model is downloaded only when the map is opened, once per page', async () => {
+  view('graph');
+  view('list');
+  assert.deepEqual(modelAsked, []);
+  view('map');
+  assert.equal($('map-status').textContent, 'Downloading the model, potion-base-8M (30 MB)…');
+  assert.equal($('map').hidden, true);
+  await mapReady();
+  assert.deepEqual(modelAsked, ['vocab.txt', 'model.safetensors']);
+  view('list');
+  view('map');
+  assert.deepEqual(modelAsked, ['vocab.txt', 'model.safetensors']);
+  assert.equal(location.hash, hash('&view=map'));
+});
+
+test('map: every skill a point with its topic, the topics labelled, in the legend and in Topic chips first', async () => {
+  await load(hash('&view=map'));
+  await mapReady();
+  assert.deepEqual(points(), [...ALL].sort());
+  const topics = (map.graphElements ?? []).filter(({ data }) => data.kind === 'topic').map(({ data }) => data.label);
+  assert.ok(topics.length >= 1);
+  assert.equal($('map-status').textContent, `5 skills in ${topics.length} ${topics.length === 1 ? 'topic' : 'topics'}, placed by what they say they do`);
+  assert.deepEqual([...$('map-legend').querySelectorAll('span')].slice(0, -1).map((span) => span.textContent), topics);
+  assert.equal(document.querySelector('#facets .facet h3')?.textContent, 'Topic');
+  assert.deepEqual([...chips('Topic').keys()].sort(), [...topics].sort());
+  assert.equal([...chips('Topic').values()].reduce((sum, { count }) => sum + count, 0), 5);
+});
+
+test('map: the search and the chips fade the other skills; nothing moves; nothing matches → the empty state', async () => {
+  await load(hash('&view=map'));
+  await mapReady();
+  const adds = map.adds;
+  type('commit');
+  assert.deepEqual([...(map.faded ?? [])].sort(), ['code-review', 'release-checklist', 'writing-lint-checks']);
+  assert.equal(map.adds, adds); // the same layout, only faded
+  chips('Agent').get('Claude Code')?.element.click();
+  assert.deepEqual([...(map.faded ?? [])].sort(), ['code-review', 'code-style', 'release-checklist', 'writing-lint-checks']);
+  type('zzz');
+  assert.equal($('map-view').hidden, true);
+  assert.equal($('empty').hidden, false);
+});
+
+test('map: a Topic chip filters every view, and a link with topic= builds the map from the list', async () => {
+  await load(hash('&view=map'));
+  await mapReady();
+  const [topic, { count }] = [...chips('Topic')][0];
+  chips('Topic').get(topic)?.element.click();
+  view('list');
+  assert.equal(listed().length, count);
+  const link = location.hash;
+  assert.match(link, /topic=/);
+  await load(link.replace('&view=map', ''));
+  assert.ok(modelAsked.length > 0);
+  await until(() => listed().length === count);
+  assert.equal(chips('Topic').get(topic)?.element.getAttribute('aria-pressed'), 'true');
+});
+
+test('map: the sheet lists the most similar skills, each opening its own sheet', async () => {
+  (document.querySelector('#list-view .skill-card') as HTMLButtonElement).click();
+  assert.ok(![...document.querySelectorAll('#sheet-body h4')].some((h4) => h4.textContent === 'Similar skills'));
+  view('map');
+  await mapReady();
+  view('list');
+  (document.querySelector('#list-view .skill-card') as HTMLButtonElement).click();
+  assert.equal($('sheet-title').textContent, 'code-review');
+  const similar = [...document.querySelectorAll('#sheet-body .similar button')] as HTMLButtonElement[];
+  assert.equal(similar.length, 4);
+  assert.deepEqual(similar.map((button) => button.textContent).sort(), ALL.filter((name) => name !== 'code-review').sort());
+  assert.ok(similar.every((button) => /^\d+% similar$/.test(button.title)));
+  const first = similar[0].textContent;
+  similar[0].click();
+  assert.equal($('sheet-title').textContent, first);
+});
+
+test('map: the model cannot be downloaded → the reason; the next scan tries again', async () => {
+  modelAnswers = false;
+  view('map');
+  await until(() => $('map-status').classList.contains('error'));
+  assert.equal($('map-status').textContent, 'Could not build the map: Could not download the model: vocab.txt: 503 Service Unavailable');
+  assert.equal($('map').hidden, true);
+  modelAnswers = true;
+  $('repo-form').dispatchEvent(new Event('submit', { cancelable: true }));
+  await mapReady();
+  assert.equal($('map-status').classList.contains('error'), false);
 });

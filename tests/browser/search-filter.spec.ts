@@ -39,6 +39,9 @@ test('the demo: live search, the graph, a chip AND the search, Clear filters, so
     await expect(summary).toHaveText(`${SKILLS} skills · ${COMMIT}`);
     await expect(cards).toHaveCount(SKILLS);
     await expect(page.locator('#show-notes')).toHaveText('0 warnings · 0 ignored');
+    // Every skill is in both roots: one group, its title the agents' logos and names, and the count.
+    await expect(page.locator('#list-view .group-title')).toHaveText([`Claude Code+Codex / AGENTS.md${SKILLS}`]);
+    await expect(page.locator('#list-view .group-title svg.logo')).toHaveCount(2);
     // actions: last changed in .claude/skills/actions and .agents/skills/actions on 2026-07-23.
     const updated = page.locator('.skill-item', { has: page.locator('h3', { hasText: /^actions$/ }) }).locator('a.updated');
     await expect(updated).toHaveText('Updated 2 months ago');
@@ -55,6 +58,7 @@ test('the demo: live search, the graph, a chip AND the search, Clear filters, so
     await expect(summary).toHaveText(`Showing 4 of ${SKILLS} skills · ${COMMIT}`);
     await expect(names()).toHaveText(['code-style', 'jna', 'kotlin-ui-dsl', 'kotlin-ui-swing-component-architecture']);
     await expect(page).toHaveURL(/q=kotlin/);
+    await expect(cards.first().locator('mark')).toHaveText(['Kotlin']);
     await expect(page).toHaveScreenshot('02-search-kotlin.png');
     await watch(2200);
   });
@@ -130,19 +134,31 @@ test('the demo: live search, the graph, a chip AND the search, Clear filters, so
     await watch(1500);
   });
 
+  await test.step('a card under the pointer rises and takes its agent\'s accent', async () => {
+    const card = cards.filter({ has: page.locator('h3', { hasText: /^code-style$/ }) });
+    const lifted = () => card.evaluate((element) => getComputedStyle(element).transform);
+    expect(await lifted()).toBe('none');
+    await card.hover();
+    await expect.poll(lifted).not.toBe('none');
+    await expect(page).toHaveScreenshot('08-card-hover.png');
+    await watch(1500);
+  });
+
   await test.step('sort by last updated: newest first, with the search', async () => {
+    // Away from the cards: the one under the pointer would rise in the screenshot.
+    await page.mouse.move(0, 0);
     await page.selectOption('#sort', 'updated');
     await expect(names().first()).toHaveText('jewel-release');
     await expect(names().nth(1)).toHaveText('markdown-library-update');
     await expect(cards.first().locator('..').locator('.updated')).toHaveText('Updated 15 hours ago');
     await expect(page).toHaveURL(/sort=updated/);
-    await expect(page).toHaveScreenshot('08-sort-updated.png');
+    await expect(page).toHaveScreenshot('09-sort-updated.png');
     await watch(2500);
     await search.focus();
     await typeSearch('jewel');
     // By name, jewel-markdown comes first; it was last changed two months before jewel-release.
     await expect(names()).toHaveText(['jewel-release', 'jewel-markdown']);
-    await expect(page).toHaveScreenshot('09-sort-and-search.png');
+    await expect(page).toHaveScreenshot('10-sort-and-search.png');
     await watch(2500);
   });
 });

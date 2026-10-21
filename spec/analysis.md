@@ -44,6 +44,12 @@ in two repositories of an organization scan, two skills.
 **Canonical location**: when a skill has several files, the first in root
 order above is used for the description and link. If the descriptions differ → warning.
 
+## This repository's red-agent skill
+
+The repository includes `.agents/skills/red-agent/SKILL.md` for exploratory testing of its web view.
+Scanning this checkout lists one `red-agent` skill with its front matter description and a link to that file.
+Its failing browser repros go under `tests/browser/red-agent/`, where the Playwright configuration discovers them.
+
 ## Last updated
 **Last updated** = the commit date of the most recent commit, up to the scanned commit, that changed any
 file in the skill's directory (`<root>/<dir>/`). Tested by `tests/last-updated.test.ts`.

@@ -9,7 +9,10 @@ import { after, test } from 'node:test';
 import cytoscape from 'cytoscape';
 import { allowedTools, type ScanView, type SkillView } from '../src/core/facets.ts';
 import { startServer } from '../src/serve.ts';
-import { absoluteTime, applyFilters, commitLink, facetCounts, fromHash, graphElements, relativeTime, renderMarkdown, sortSkills, toHash } from '../web/atlas.js';
+import {
+  absoluteTime, AGENT_LOGOS, agentLogo, applyFilters, commitLink, facetCounts, fromHash, graphElements, groupByAgents, highlight, listGroups,
+  relativeTime, renderMarkdown, sortSkills, toHash,
+} from '../web/atlas.js';
 import { CLI, EXAMPLE_COMMIT, FIXTURE, open } from './helpers.ts';
 
 const { server, url } = await startServer({ open, port: 0 });
@@ -53,8 +56,9 @@ test('the page, its scripts and Cytoscape are served; nothing else', async () =>
   const html = await page.text();
   assert.match(html, /data-view="list"/);
   assert.match(html, /data-view="graph"/);
+  assert.match(html, /data-view="map"/);
   assert.match(html, /id="repo"/);
-  for (const path of ['/style.css', '/app.js', '/atlas.js', '/graph.js', '/vendor/cytoscape.mjs']) {
+  for (const path of ['/style.css', '/app.js', '/atlas.js', '/graph.js', '/embed.js', '/map.js', '/mapview.js', '/vendor/cytoscape.mjs']) {
     assert.equal((await get(path)).status, 200, path);
   }
   for (const path of ['/package.json', '/../package.json', '/%2e%2e/package.json', '/web/app.js', '/src/cli.ts']) {
@@ -159,6 +163,48 @@ test('filters: each chip counts what it would show, given the other groups', () 
   assert.equal(count('other', 'shared'), 1);
 });
 
+test('list: a group per set of agents, in root order, a set before the longer ones it starts', () => {
+  const as = (name: string, ...agents: string[]) => ({ name, agents }) as unknown as SkillView;
+  const skills = [
+    as('a', 'GitHub Copilot'), as('b', 'Codex / AGENTS.md', 'Claude Code'), as('c', 'Claude Code'),
+    as('d', 'Somebody else'), as('e', 'Claude Code', 'Codex / AGENTS.md'), as('f', 'Custom agent'), as('g', 'Claude Code', 'GitHub Copilot'),
+  ];
+  // The agents of a group in root order, whatever the canonical one; unknown agents last; the skills as given.
+  assert.deepEqual(groupByAgents(skills).map(({ agents, skills }) => [agents.join(' + '), skills.map((skill: SkillView) => skill.name)]), [
+    ['Claude Code', ['c']],
+    ['Claude Code + Codex / AGENTS.md', ['b', 'e']],
+    ['Claude Code + GitHub Copilot', ['g']],
+    ['GitHub Copilot', ['a']],
+    ['Custom agent', ['f']],
+    ['Somebody else', ['d']],
+  ]);
+  assert.deepEqual(groupByAgents([]), []);
+  assert.deepEqual(groupByAgents(fixture.skills).map(({ skills }) => skills.length), [1, 1, 1, 1, 1]);
+});
+
+test('list: each agent\'s logo; any other agent the robot', () => {
+  for (const agent of ['Claude Code', 'Codex / AGENTS.md', 'GitHub Copilot']) {
+    assert.equal(agentLogo(agent), AGENT_LOGOS[agent as keyof typeof AGENT_LOGOS]);
+    assert.match(agentLogo(agent), /^[Mm][\d\s.,a-zA-Z-]+$/);
+  }
+  assert.equal(new Set(Object.values(AGENT_LOGOS)).size, 4);
+  assert.equal(agentLogo('Custom agent'), AGENT_LOGOS.other);
+  assert.equal(agentLogo('Somebody else'), AGENT_LOGOS.other);
+});
+
+test('highlight: every place of every word, case-insensitively, overlaps merged, the text kept', () => {
+  const shown = (text: string, query: string) => highlight(text, query).map(({ text, match }) => (match ? `[${text}]` : text)).join('');
+  assert.equal(shown('Feature flags', 'FLAG'), 'Feature [flag]s');
+  assert.equal(shown('commit, Commit', 'comm'), '[comm]it, [Comm]it');
+  assert.equal(shown('feature-flags', '  flag   feat '), '[feat]ure-[flag]s');
+  // Overlapping and adjacent words make one mark.
+  assert.equal(shown('abcdef', 'abc bcd ef'), '[abcdef]');
+  assert.equal(shown('abc', ''), 'abc');
+  assert.equal(shown('abc', 'zzz'), 'abc');
+  assert.deepEqual(highlight('', 'a'), []);
+  assert.deepEqual(highlight('ab', 'b'), [{ text: 'a', match: false }, { text: 'b', match: true }]);
+});
+
 test('the URL hash keeps the repository, the view, the sort and the filters', () => {
   const state = {
     repo: 'github.com/a/b', view: 'graph', sort: 'updated',
@@ -166,6 +212,8 @@ test('the URL hash keeps the repository, the view, the sort and the filters', ()
   };
   assert.deepEqual(fromHash(`#${toHash(state)}`), state);
   assert.deepEqual(fromHash(''), { repo: '', view: 'list', sort: 'name', filters: none });
+  assert.equal(fromHash('view=map').view, 'map');
+  assert.equal(fromHash('view=elsewhere').view, 'list');
 });
 
 test('graph: repository → agents → skills, optionally the shared tools and front matter keys', () => {
@@ -243,6 +291,15 @@ test('web sort: after the search and the facets, in the same order', () => {
   const filtered = applyFilters(dated, { ...fromHash('').filters, query: 'one', agent: ['Claude Code'] });
   assert.deepEqual(names(sortSkills(filtered, 'updated')), ['c', 'e', 'a']);
   assert.deepEqual(names(applyFilters(dated, { ...fromHash('').filters, agent: ['GitHub Copilot'] })), []);
+});
+
+test('web sort: within each group of the list; the groups and their order stay', () => {
+  const copilot = (name: string, date: string | null) => ({ ...view(name, '', date), agents: ['GitHub Copilot'] });
+  const skills = [...dated, copilot('g', null), copilot('h', '2026-02-01T00:00:00Z'), copilot('i', '2026-03-01T00:00:00Z')];
+  const shown = (sort: string) => listGroups(skills, sort).map(({ agents, skills }) => [agents.join(' + '), names(skills)]);
+  assert.deepEqual(shown('name'), [['Claude Code', ['a', 'b', 'c', 'd', 'e', 'f']], ['GitHub Copilot', ['g', 'h', 'i']]]);
+  // i is newer than a, but stays in its group, after the Claude Code skills.
+  assert.deepEqual(shown('updated'), [['Claude Code', ['f', 'c', 'e', 'a', 'b', 'd']], ['GitHub Copilot', ['i', 'h', 'g']]]);
 });
 
 test('web: `Updated 3 days ago`, in the largest whole unit; the absolute date in UTC; GitHub commits only are links', () => {

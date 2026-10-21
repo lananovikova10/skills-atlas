@@ -5,7 +5,7 @@ import { spawnSync } from 'node:child_process';
 import { mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { after, test } from 'node:test';
 import { findSkills } from '../src/core/find.ts';
 import { openGitHub, parseGitHubUrl } from '../src/core/github.ts';
@@ -70,6 +70,17 @@ test('./fixture: every unique skill, sorted by name, linked to its file, copies 
     ].join('\n'),
   );
   assert.match(fixture.stderr, /^warning: \.agents\/skills\/release-checklist\/SKILL\.md: malformed front matter: /m);
+});
+
+test('this checkout exposes the red-agent web bug-hunting skill in a local scan', async () => {
+  const root = join(fileURLToPath(new URL('..', import.meta.url)), '.');
+  const result = await atlas(['scan', root]);
+  assert.equal(result.code, 0, result.stderr);
+  assert.match(result.stdout, /^red-agent — Hunt Skill Atlas web bugs with Playwright, confirm each twice, and file evidenced GitHub issues\.$/m);
+  assert.ok(result.stdout.includes(`${pathToFileURL(root).href}/.agents/skills/red-agent/SKILL.md`));
+  // Its last update depends on this checkout's history (none before it is committed): not what this checks.
+  const warnings = result.stderr.split('\n').filter((line) => line.includes('.agents/skills/red-agent/SKILL.md'));
+  assert.deepEqual(warnings.filter((line) => !line.includes(': last updated unknown: ')), []);
 });
 
 const stderr = fixture.stderr.split('\n');

@@ -17,6 +17,8 @@ build-tools-bump-gradle-api — Bumps the Gradle API version that Kotlin Gradle 
 `./skill-atlas serve` opens the same scan as a web page at http://127.0.0.1:4173/: a list and a graph of
 the skills, a live search and filters by agent, type, allowed tools and front matter, a sort by name or last update,
 and each skill's front matter and content.
+The **Map** places the skills by what they say they do, in topics, with a tiny model (Model2Vec's potion-base-8M,
+30 MB, downloaded from Hugging Face when the map is opened) that runs in the page; see [spec/web.md](spec/web.md#map).
 
 `…/tree/<commit>` scans a pinned commit, e.g. `./skill-atlas scan github.com/JetBrains/koog/tree/22e342e033c716f835312dd6cbe83193e1cbcf76`.
 
@@ -41,4 +43,4 @@ run Actions → **update-baselines** on the branch, which commits them. The imag
 
 - [spec/](spec/): what it does. [AGENTS.md](AGENTS.md): the definition of done.
 - [fixture/](fixture/README.md): a small repository for the tests.
-- [docs/demo/](docs/demo/README.md): short videos of the search and the organization scan.
+- [docs/demo/](docs/demo/README.md): short videos of the skill list, the search, the map and the organization scan.
