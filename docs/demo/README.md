@@ -1,4 +1,6 @@
 # Demos
+- [red-agent.mp4](red-agent.mp4): a real scan of this checkout through a temporary path, filtered to show
+  the new `red-agent` skill and its file link ([spec/analysis.md](../../spec/analysis.md#this-repositorys-red-agent-skill)).
 - [search-filter.mp4](search-filter.mp4): `./skill-atlas serve` on JetBrains/intellij-community: the live search
   (several words, nothing matches, **Clear search**), the graph filtered the same way, a chip AND the search,
   **Clear filters** ([spec/web.md](../../spec/web.md)). The video of
