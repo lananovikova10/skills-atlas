@@ -9,7 +9,7 @@ import { after, test } from 'node:test';
 import cytoscape from 'cytoscape';
 import { allowedTools, type ScanView, type SkillView } from '../src/core/facets.ts';
 import { startServer } from '../src/serve.ts';
-import { applyFilters, facetCounts, fromHash, graphElements, renderMarkdown, toHash } from '../web/atlas.js';
+import { AGENT_LOGOS, agentLogo, applyFilters, facetCounts, fromHash, graphElements, groupByAgents, highlight, renderMarkdown, toHash } from '../web/atlas.js';
 import { CLI, EXAMPLE_COMMIT, FIXTURE, open } from './helpers.ts';
 
 const { server, url } = await startServer({ open, port: 0 });
@@ -157,6 +157,48 @@ test('filters: each chip counts what it would show, given the other groups', () 
   assert.equal(count('type', 'model and user'), 2);
   assert.equal(count('type', 'user only'), 0);
   assert.equal(count('other', 'shared'), 1);
+});
+
+test('list: a group per set of agents, in root order, a set before the longer ones it starts', () => {
+  const as = (name: string, ...agents: string[]) => ({ name, agents }) as unknown as SkillView;
+  const skills = [
+    as('a', 'GitHub Copilot'), as('b', 'Codex / AGENTS.md', 'Claude Code'), as('c', 'Claude Code'),
+    as('d', 'Somebody else'), as('e', 'Claude Code', 'Codex / AGENTS.md'), as('f', 'Custom agent'), as('g', 'Claude Code', 'GitHub Copilot'),
+  ];
+  // The agents of a group in root order, whatever the canonical one; unknown agents last; the skills as given.
+  assert.deepEqual(groupByAgents(skills).map(({ agents, skills }) => [agents.join(' + '), skills.map((skill: SkillView) => skill.name)]), [
+    ['Claude Code', ['c']],
+    ['Claude Code + Codex / AGENTS.md', ['b', 'e']],
+    ['Claude Code + GitHub Copilot', ['g']],
+    ['GitHub Copilot', ['a']],
+    ['Custom agent', ['f']],
+    ['Somebody else', ['d']],
+  ]);
+  assert.deepEqual(groupByAgents([]), []);
+  assert.deepEqual(groupByAgents(fixture.skills).map(({ skills }) => skills.length), [1, 1, 1, 1, 1]);
+});
+
+test('list: each agent\'s logo; any other agent the robot', () => {
+  for (const agent of ['Claude Code', 'Codex / AGENTS.md', 'GitHub Copilot']) {
+    assert.equal(agentLogo(agent), AGENT_LOGOS[agent as keyof typeof AGENT_LOGOS]);
+    assert.match(agentLogo(agent), /^[Mm][\d\s.,a-zA-Z-]+$/);
+  }
+  assert.equal(new Set(Object.values(AGENT_LOGOS)).size, 4);
+  assert.equal(agentLogo('Custom agent'), AGENT_LOGOS.other);
+  assert.equal(agentLogo('Somebody else'), AGENT_LOGOS.other);
+});
+
+test('highlight: every place of every word, case-insensitively, overlaps merged, the text kept', () => {
+  const shown = (text: string, query: string) => highlight(text, query).map(({ text, match }) => (match ? `[${text}]` : text)).join('');
+  assert.equal(shown('Feature flags', 'FLAG'), 'Feature [flag]s');
+  assert.equal(shown('commit, Commit', 'comm'), '[comm]it, [Comm]it');
+  assert.equal(shown('feature-flags', '  flag   feat '), '[feat]ure-[flag]s');
+  // Overlapping and adjacent words make one mark.
+  assert.equal(shown('abcdef', 'abc bcd ef'), '[abcdef]');
+  assert.equal(shown('abc', ''), 'abc');
+  assert.equal(shown('abc', 'zzz'), 'abc');
+  assert.deepEqual(highlight('', 'a'), []);
+  assert.deepEqual(highlight('ab', 'b'), [{ text: 'a', match: false }, { text: 'b', match: true }]);
 });
 
 test('the URL hash keeps the repository, the view and the filters', () => {

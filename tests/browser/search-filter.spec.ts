@@ -36,6 +36,9 @@ test('the demo: live search, the graph, a chip AND the search, Clear filters', a
     await expect(summary).toHaveText(`${SKILLS} skills · ${COMMIT}`);
     await expect(cards).toHaveCount(SKILLS);
     await expect(page.locator('#show-notes')).toHaveText('0 warnings · 0 ignored');
+    // Every skill is in both roots: one group, its title the agents' logos and names, and the count.
+    await expect(page.locator('#list-view .group-title')).toHaveText([`Claude Code+Codex / AGENTS.md${SKILLS}`]);
+    await expect(page.locator('#list-view .group-title svg.logo')).toHaveCount(2);
     await expect(page).toHaveScreenshot('01-skill-list.png');
     await watch(2000);
   });
@@ -47,6 +50,7 @@ test('the demo: live search, the graph, a chip AND the search, Clear filters', a
     await expect(summary).toHaveText(`Showing 4 of ${SKILLS} skills · ${COMMIT}`);
     await expect(names()).toHaveText(['code-style', 'jna', 'kotlin-ui-dsl', 'kotlin-ui-swing-component-architecture']);
     await expect(page).toHaveURL(/q=kotlin/);
+    await expect(cards.first().locator('mark')).toHaveText(['Kotlin']);
     await expect(page).toHaveScreenshot('02-search-kotlin.png');
     await watch(2200);
   });
@@ -119,6 +123,16 @@ test('the demo: live search, the graph, a chip AND the search, Clear filters', a
     await expect(cards).toHaveCount(SKILLS);
     await expect(summary).toHaveText(`${SKILLS} skills · ${COMMIT}`);
     await expect(page).toHaveScreenshot('07-filters-cleared.png');
+    await watch(1500);
+  });
+
+  await test.step('a card under the pointer rises and takes its agent\'s accent', async () => {
+    const card = cards.filter({ has: page.locator('h3', { hasText: /^code-style$/ }) });
+    const lifted = () => card.evaluate((element) => getComputedStyle(element).transform);
+    expect(await lifted()).toBe('none');
+    await card.hover();
+    await expect.poll(lifted).not.toBe('none');
+    await expect(page).toHaveScreenshot('08-card-hover.png');
     await watch(1500);
   });
 });

@@ -39,4 +39,4 @@ run Actions → **update-baselines** on the branch, which commits them. The imag
 
 - [spec/](spec/): what it does. [AGENTS.md](AGENTS.md): the definition of done.
 - [fixture/](fixture/README.md): a small repository for the tests.
-- [docs/demo/](docs/demo/README.md): short videos of the search and the organization scan.
+- [docs/demo/](docs/demo/README.md): short videos of the skill list, the search and the organization scan.
