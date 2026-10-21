@@ -3,7 +3,8 @@
   the new `red-agent` skill and its file link ([spec/analysis.md](../../spec/analysis.md#this-repositorys-red-agent-skill)).
 - [search-filter.mp4](search-filter.mp4): `./skill-atlas serve` on JetBrains/intellij-community: the live search
   (several words, nothing matches, **Clear search**), the graph filtered the same way, a chip AND the search,
-  **Clear filters**, then **Sort** by *Last updated* with the search; every card says when it was last updated
+  **Clear filters**, a card's hover, then **Sort** by *Last updated* within the agents' group, with the search; every
+  card says when it was last updated
   ([spec/web.md](../../spec/web.md)). The video of
   [tests/browser/search-filter.spec.ts](../../tests/browser/search-filter.spec.ts): intellij-community at
   589d822, replayed from a recording of GitHub's answers, the page's clock fixed at 2026-10-20 12:00 UTC;
