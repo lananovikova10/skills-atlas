@@ -24,6 +24,7 @@ Every ordinary bug issue carries **`Delegated to AI`**, which starts the `issue-
 - Start the local web view as `README.md` describes. Test only the local view and mocked APIs.
 - Use Playwright with `video: 'on'`, a fixed viewport, and listeners for `console` errors and `pageerror` on every page. The repository's Playwright configuration already supplies video and a fixed viewport; set explicit overrides when a charter needs a different viewport.
 - Mock the served page's `/api/scan` response with `page.route()` for nearly every test. The local server calls GitHub itself, so routing `api.github.com` in the browser does not mock a served scan. Let the local server handle invalid or local-directory inputs when testing its validation. For the standalone page, route its browser requests to `api.github.com`. Keep runs deterministic, avoid rate limits, and feed the app hostile data. Hit the real GitHub API only to confirm a bug that depends on it, without attacking that service.
+- When testing Map, mock its Hugging Face model file requests with `page.route()` and the `tests/model/` fixtures, as `tests/browser/map.spec.ts` does. Test download errors with mocked failures; do not make exploratory runs depend on the real model host.
 - Give each charter its own recorded Playwright session. The existing test runner finds specs under `tests/browser/`.
 
 ## 3. Explore — charters
@@ -35,11 +36,12 @@ Work through these charters. Stop a charter after about 10 minutes without a new
 | Repository input | Empty, spaces, `http://`, trailing `/`, `.git` suffix, owner-only URL, non-GitHub URL, 2,000 chars, unicode, `<img src=x onerror=alert(1)>` |
 | API responses | 404, 403 rate limit, 500, timeout, slow (5 s), malformed JSON, empty repo, 0 skills, 500 skills |
 | Skill data | Missing name or description, huge description, duplicate names across roots, unicode and emoji names, HTML/Markdown in description, malformed front matter |
-| Search & facets | Regex characters (`.*[(`), only spaces, very long query, every facet combination, clear filters mid-typing |
+| Search & facets | Regex characters (`.*[(`), only spaces, very long query, every facet combination including Topic after Map builds, clear filters mid-typing |
 | Sorting | Every available sort with search and facets; unknown dates, if sorting is supported by the tested version |
-| URL hash | Edit `#repo=`, `q=`, and any supported `sort=` by hand; invalid values; reload; back/forward |
-| Interaction | Double-click Analyse, analyse while a scan runs, switch List/Graph during a scan, keyboard only (Tab, `/`, Esc) |
-| Layout | 375 px and 1920 px widths, 200% zoom, light and dark scheme, long names wrapping |
+| URL hash | Edit `#repo=`, `q=`, `view=map`, `topic=`, and any supported `sort=` by hand; invalid values; reload; back/forward |
+| Map | Lazy model download, download failure then a new scan, 0 and 500 skills, topic chips with search, stable points under filters, Fit, similar-skill links |
+| Interaction | Double-click Analyse, analyse while a scan runs, switch List/Graph/Map during a scan, keyboard only (Tab, `/`, Esc) |
+| Layout | 375 px and 1920 px widths, 200% zoom, light and dark scheme, long names and Map labels wrapping |
 
 ## 4. What counts as a bug
 
