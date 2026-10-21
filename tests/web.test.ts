@@ -53,8 +53,9 @@ test('the page, its scripts and Cytoscape are served; nothing else', async () =>
   const html = await page.text();
   assert.match(html, /data-view="list"/);
   assert.match(html, /data-view="graph"/);
+  assert.match(html, /data-view="map"/);
   assert.match(html, /id="repo"/);
-  for (const path of ['/style.css', '/app.js', '/atlas.js', '/graph.js', '/vendor/cytoscape.mjs']) {
+  for (const path of ['/style.css', '/app.js', '/atlas.js', '/graph.js', '/embed.js', '/map.js', '/mapview.js', '/vendor/cytoscape.mjs']) {
     assert.equal((await get(path)).status, 200, path);
   }
   for (const path of ['/package.json', '/../package.json', '/%2e%2e/package.json', '/web/app.js', '/src/cli.ts']) {
@@ -205,6 +206,8 @@ test('the URL hash keeps the repository, the view and the filters', () => {
   const state = { repo: 'github.com/a/b', view: 'graph', filters: { ...none, query: 'x y', agent: ['Claude Code', 'GitHub Copilot'], type: ['user only'] } };
   assert.deepEqual(fromHash(`#${toHash(state)}`), state);
   assert.deepEqual(fromHash(''), { repo: '', view: 'list', filters: none });
+  assert.equal(fromHash('view=map').view, 'map');
+  assert.equal(fromHash('view=elsewhere').view, 'list');
 });
 
 test('graph: repository → agents → skills, optionally the shared tools and front matter keys', () => {

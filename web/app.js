@@ -1,10 +1,17 @@
-// The page: the repository field, the filters, the list and graph views and the skill sheet.
+// The page: the repository field, the filters, the list, graph and map views and the skill sheet.
 import { agentColor, agentLogo, applyFilters, FACETS, facetCounts, facetLabel, firstSentence, fromHash, groupByAgents, highlight, renderMarkdown, toHash, TYPES } from './atlas.js';
+import { topicColor } from './map.js';
 
 const $ = (id) => document.getElementById(id);
 // The token is kept here only: never in the hash, never stored.
 const state = { ...fromHash(location.hash), result: undefined, token: '' };
 let graph;
+let mapView;
+// The model, downloaded once per page; the map of the scan shown, built once per scan, when the
+// map view or a topic filter first asks for it: `{ result, status: 'loading' | 'ready' | 'error', message, data }`.
+let model;
+let map;
+const dark = () => matchMedia('(prefers-color-scheme: dark)').matches;
 
 function element(tag, attributes = {}, ...children) {
   const node = document.createElement(tag);
@@ -72,10 +79,39 @@ function update() {
   $('empty-clear').hidden = !query;
   $('list-view').hidden = state.view !== 'list';
   $('graph-view').hidden = state.view !== 'graph' || shown.length === 0;
+  $('map-view').hidden = state.view !== 'map' || shown.length === 0;
   for (const tab of document.querySelectorAll('[data-view]')) tab.setAttribute('aria-selected', String(tab.dataset.view === state.view));
+  if (state.view === 'map' || state.filters.topic.length > 0) buildTopics();
   if (state.view === 'list') renderList(shown);
-  else renderGraph(shown);
+  else if (state.view === 'graph') renderGraph(shown);
+  else renderMap(shown);
 }
+
+/** Starts the map of the scan shown, unless it is started: the model, then every skill's vector, then the map. */
+async function buildTopics() {
+  const result = state.result;
+  if (map?.result === result) return;
+  const entry = (map = { result, status: 'loading', message: 'Downloading the model, potion-base-8M (30 MB)…' });
+  try {
+    const [{ loadModel }, { buildMap, skillText }] = await Promise.all([import('./embed.js'), import('./map.js')]);
+    model ??= loadModel();
+    const loaded = await model;
+    if (map !== entry) return;
+    entry.message = `Placing ${result.skills.length} ${result.skills.length === 1 ? 'skill' : 'skills'}…`;
+    update();
+    await new Promise((resolve) => setTimeout(resolve)); // lets the page show it
+    entry.data = buildMap(result.skills, result.skills.map((skill) => loaded.embed(skillText(skill))));
+    for (const point of entry.data.points) result.skills.find((skill) => skill.id === point.id).topic = entry.data.topics[point.topic].label;
+    entry.status = 'ready';
+  } catch (error) {
+    model = undefined; // the next scan tries again
+    entry.status = 'error';
+    entry.message = `Could not build the map: ${error.message}`;
+  }
+  if (map === entry) update();
+}
+
+const topicIndex = (label) => map?.data?.topics.findIndex((topic) => topic.label === label) ?? -1;
 
 function renderFacets(skills) {
   const counts = facetCounts(skills, state.filters);
@@ -92,6 +128,7 @@ function renderFacets(skills) {
             },
           },
           key === 'agent' ? logo(value) : undefined,
+          key === 'topic' ? element('span', { class: 'dot', style: `width:8px;height:8px;border-radius:50%;background:${topicColor(topicIndex(value), dark()) ?? 'var(--outline)'}` }) : undefined,
           facetLabel(key, value), element('span', { class: 'count' }, String(count)));
         }),
       )),
@@ -155,6 +192,27 @@ async function renderGraph(skills) {
   );
 }
 
+async function renderMap(skills) {
+  const ready = map.status === 'ready';
+  $('map-status').textContent = ready
+    ? `${map.data.points.length} skills in ${map.data.topics.length} ${map.data.topics.length === 1 ? 'topic' : 'topics'}, placed by what they say they do`
+    : map.message;
+  $('map-status').classList.toggle('error', map.status === 'error');
+  $('map').hidden = !ready;
+  $('map-fit').hidden = !ready;
+  $('map-legend').replaceChildren(...(ready ? [
+    ...map.data.topics.map((topic, index) => element('span', {}, element('i', { style: `background:${topicColor(index, dark()) ?? 'var(--outline)'}` }), topic.label)),
+    element('span', {}, 'Near skills say similar things · computed in this page with potion-base-8M · scroll to zoom'),
+  ] : []));
+  if (!ready) return;
+  if (!mapView) {
+    const { createMap } = await import('./mapview.js');
+    mapView ??= createMap($('map'), { onSelect: openSheet });
+  }
+  mapView.resize();
+  mapView.render(map.data, state.result.skills, new Set(skills.map((skill) => skill.id)));
+}
+
 function value(data) {
   if (data !== null && typeof data === 'object') return element('pre', {}, JSON.stringify(data, null, 2));
   return String(data);
@@ -183,6 +241,11 @@ function openSheet(id) {
         element('span', { class: 'tag' }, logo(file.agent), file.agent),
       ),
     )),
+    map?.result === state.result && map.data ? [element('h4', {}, 'Similar skills'), element('ul', { class: 'similar' }, map.data.similar.get(skill.id).map(({ id: other, similarity }) =>
+      element('li', {}, element('button', { class: 'chip', type: 'button', title: `${Math.round(similarity * 100)}% similar`, onclick: () => openSheet(other) },
+        element('span', { class: 'dot', style: `width:8px;height:8px;border-radius:50%;background:${topicColor(map.data.points.find((point) => point.id === other).topic, dark()) ?? 'var(--outline)'}` }),
+        state.result.skills.find((candidate) => candidate.id === other).name)),
+    ))] : undefined,
     skill.warnings.length ? [element('h4', {}, 'Warnings'), element('ul', {}, skill.warnings.map((text) => element('li', {}, text)))] : undefined,
     skill.body ? [element('h4', {}, 'Content'), (() => {
       const markdown = element('div', { class: 'markdown' });
@@ -245,6 +308,7 @@ $('show-notes').addEventListener('click', () => ($('notes').hidden = !$('notes')
 $('graph-tools').addEventListener('change', update);
 $('graph-keys').addEventListener('change', update);
 $('graph-fit').addEventListener('click', () => graph?.fit());
+$('map-fit').addEventListener('click', () => mapView?.fit());
 $('sheet-close').addEventListener('click', closeSheet);
 $('scrim').addEventListener('click', closeSheet);
 document.addEventListener('keydown', (event) => {

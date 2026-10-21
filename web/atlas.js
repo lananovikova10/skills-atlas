@@ -3,6 +3,7 @@
 
 /** The filter groups, in the order the page shows them. */
 export const FACETS = [
+  { key: 'topic', title: 'Topic' },
   { key: 'agent', title: 'Agent' },
   { key: 'type', title: 'Type' },
   { key: 'tool', title: 'Allowed tools' },
@@ -35,13 +36,14 @@ export const AGENT_LOGOS = {
 };
 export const agentLogo = (agent) => AGENT_LOGOS[agent] ?? AGENT_LOGOS.other;
 
-/** What a skill is, facet by facet: each a list of values. */
+/** What a skill is, facet by facet: each a list of values. Its topic, once the map has placed it. */
 export function facetValues(skill) {
   const other = [];
   if (skill.agents.length > 1) other.push('shared');
   if (skill.warnings.length > 0) other.push('warnings');
   if (!skill.description) other.push('undescribed');
   return {
+    topic: skill.topic ? [skill.topic] : [],
     agent: skill.agents,
     type: skill.tools.length > 0 ? [skill.invocation, 'tool-restricted'] : [skill.invocation],
     tool: skill.tools,
@@ -157,7 +159,8 @@ export function fromHash(hash) {
   const params = new URLSearchParams(hash.replace(/^#/, ''));
   const filters = { query: params.get('q') ?? '' };
   for (const { key } of FACETS) filters[key] = params.get(key)?.split('\n').filter(Boolean) ?? [];
-  return { repo: params.get('repo') ?? '', view: params.get('view') === 'graph' ? 'graph' : 'list', filters };
+  const view = ['graph', 'map'].includes(params.get('view')) ? params.get('view') : 'list';
+  return { repo: params.get('repo') ?? '', view, filters };
 }
 
 /**
