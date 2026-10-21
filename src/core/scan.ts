@@ -1,5 +1,5 @@
 import { findSkills, SKILL_ROOTS, type Ignored, type SkillFile } from './find.ts';
-import { sortSkills, type Repository, type Skill } from './model.ts';
+import { newest, sortSkills, type LastUpdated, type Repository, type Skill } from './model.ts';
 import { parseSkill } from './parse.ts';
 
 /** A repository to scan: its files, and how to read them. */
@@ -11,6 +11,11 @@ export type Source = {
   warnings: string[];
   /** The file's bytes, or undefined if it is not there. */
   read(path: string): Promise<Uint8Array | undefined>;
+  /**
+   * The most recent commit, up to the scanned commit, that changed the directory; undefined if none did.
+   * Rejects when it cannot tell. Without it, the dates are not looked up: an organization scan.
+   */
+  lastUpdated?(directory: string): Promise<LastUpdated | undefined>;
 };
 
 export type ScanResult = { repository: Repository; skills: Skill[]; warnings: string[]; ignored: Ignored[] };
@@ -44,16 +49,20 @@ export async function scan(source: Source): Promise<ScanResult> {
       copies: copies.map((copy) => copy.path),
       roots: [...new Set(group.flatMap((skill) => skill.roots))],
       warnings: own,
+      // Across every location of the skill: the latest one.
+      lastUpdated: newest(group.map((skill) => skill.lastUpdated)),
     });
   }
   return { repository: source.repository, skills: sortSkills(skills), warnings, ignored };
 }
 
 async function readSkill(source: Source, file: SkillFile): Promise<{ skill?: Skill; warnings: string[] }> {
-  const bytes = await source.read(file.path);
+  // The date is asked at the same time as the file: on GitHub, each is a request.
+  const [bytes, updated] = await Promise.all([source.read(file.path), lastUpdated(source, file.path)]);
   if (!bytes) return { warnings: [`${file.path}: listed, but not found at the scanned commit; skipped`] };
   const parsed = parseSkill(new TextDecoder().decode(bytes));
   const warnings = parsed.warning ? [`${file.path}: ${parsed.warning}`] : [];
+  if (updated.warning) warnings.push(updated.warning);
   // Names are compared as identities are: case-insensitively.
   if (parsed.name && parsed.name.toLowerCase() !== file.directory.toLowerCase()) {
     warnings.push(`${file.path}: name "${parsed.name}" differs from its directory "${file.directory}"; using "${parsed.name}"`);
@@ -70,6 +79,18 @@ async function readSkill(source: Source, file: SkillFile): Promise<{ skill?: Ski
     properties: parsed.properties,
     body: parsed.body,
     warnings,
+    lastUpdated: updated.update ?? null,
   };
   return { skill, warnings };
+}
+
+/** The file's directory's last update. Not known → a warning, and the scan goes on. */
+async function lastUpdated(source: Source, path: string): Promise<{ update?: LastUpdated; warning?: string }> {
+  if (!source.lastUpdated) return {};
+  try {
+    const update = await source.lastUpdated(path.slice(0, path.lastIndexOf('/')));
+    return update ? { update } : { warning: `${path}: last updated unknown: no commit changed its directory` };
+  } catch (error) {
+    return { warning: `${path}: last updated unknown: ${error instanceof Error ? error.message : String(error)}` };
+  }
 }

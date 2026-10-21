@@ -14,6 +14,7 @@ else `GITHUB_TOKEN` as in the CLI.
 - `files`: the canonical file, then its copies, each with `path`, `agent`, `link`
 - `roots`, `agents`: the skill roots it is in and their agents, canonical first
 - `invocation`, `tools`: see below; `warnings`: the warnings about its files
+- `lastUpdated`: `{ "date": "<ISO 8601>", "commit": "<sha>" }`, its [last update](analysis.md#last-updated), or `null`
 
 No `repo` or an `AtlasError` (unreachable repository, unknown commit, …) → 400 `{ "error": <the CLI's message> }`.
 ## Standalone page
@@ -67,10 +68,14 @@ From the front matter, by who can invoke the skill:
 ## List
 - Grouped by **agent**: a group per set of agents the skills are in, so each skill is in one group. The agents
   in root order ([Agents](#agents)), and the groups in that order too, a set before the longer ones it starts:
-  *Claude Code*, *Claude Code + Codex / AGENTS.md*, *Codex / AGENTS.md*, …; in a group, the skills by name
+  *Claude Code*, *Claude Code + Codex / AGENTS.md*, *Codex / AGENTS.md*, …; in a group, the skills by name, or by
+  last update with the [Sort](#sort)
 - A group's title: each agent's logo and name, joined by `+`, and how many skills it shows; a group with none
   is not shown
-- A card: name, the description's first sentence, agents, type, warnings
+- A card: name, the description's first sentence, agents, type, warnings, and `Updated 3 days ago`: the largest
+  whole unit (minutes, hours, days, months of 30 days, years), `just now` under a minute; its tooltip the absolute
+  date, `2026-10-17 14:03 UTC`; on GitHub, a link to the commit (`https://github.com/<owner>/<repo>/commit/<sha>`,
+  a new tab); unknown → `Last update unknown`. The sheet shows it too
 - Each agent has a **logo**, in its color: Claude Code and GitHub Copilot their own marks (simple-icons);
   Codex / AGENTS.md a terminal; any other agent a robot. On the group titles, the cards, the **Agent** chips and
   the sheet's files
@@ -84,6 +89,12 @@ From the front matter, by who can invoke the skill:
   *In several agents*, *Has warnings*, *No description*
 - OR within a group, AND across groups; each chip counts the skills it would show
 - The repository, the view and the filters are in the URL hash: a reload or a shared link shows the same
+## Sort
+- A **Sort** control at the right of the summary, for the list (hidden with the graph and the map): *Name*, the
+  default, or *Last updated*: newest first, the same date by name, unknown dates last
+- It orders the skills **within each group**: the groups and their order stay
+- It orders what the search and the chips show; **Clear filters** keeps it
+- `sort=updated` in the URL hash; *Name* is not written there
 ## Search
 - Over the skill's **name** and **description**; not its content or path. Case-insensitive substring;
   the whitespace around the query is ignored

@@ -16,10 +16,14 @@ the links pin it.
 JetBrains/kotlin · 6 skills
 build-tools-bump-gradle-api — Bumps the Gradle API…
   https://github.com/JetBrains/kotlin/blob/<commit>/…
+  updated <YYYY-MM-DD>
 ```
 - Sorted by **name**; the description's *first sentence*
+- `updated <YYYY-MM-DD>`, last for each skill: its [last update](analysis.md#last-updated), the day in UTC;
+  `updated —` when unknown. Not in an organization scan. Sorted by name still: no other order
 - `also in <paths>` for copies, in root order; warnings go to *stderr*
 - `ignored: <path>: <reason>` lines go to *stderr*, after the warnings, sorted by path
 - Skill warnings:
   - `warning: <path>: name "<name>" differs from its directory "<dir>"; using "<name>"`
   - `warning: <canonical path>: description differs in <copy paths>`
+  - `warning: <path>: last updated unknown: <reason>`

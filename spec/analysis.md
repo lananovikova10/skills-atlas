@@ -3,10 +3,10 @@
 A **GitHub repository** URL, a local directory, or a GitHub **organization or user** URL:
 every repository of it, see [organization.md](organization.md)
 ## Output
-Every unique `SKILL.md`: **name**, **description**, **link**
+Every unique `SKILL.md`: **name**, **description**, **link**, **last updated**
 ## Architecture
 Core: fetch → find → parse. CLI and [web view](web.md): *thin clients*.
-Skill: id = `<owner>/<repo>:<path>`, name, description, commit
+Skill: id = `<owner>/<repo>:<path>`, name, description, commit, last updated
 ## Details
 - **GitHub API**, no clone; *under 5 s* for intellij-community
 - The name: front matter, else the directory name
@@ -49,3 +49,15 @@ order above is used for the description and link. If the descriptions differ →
 The repository includes `.agents/skills/red-agent/SKILL.md` for exploratory testing of its web view.
 Scanning this checkout lists one `red-agent` skill with its front matter description and a link to that file.
 Its failing browser repros go under `tests/browser/red-agent/`, where the Playwright configuration discovers them.
+
+## Last updated
+**Last updated** = the commit date of the most recent commit, up to the scanned commit, that changed any
+file in the skill's directory (`<root>/<dir>/`). Tested by `tests/last-updated.test.ts`.
+- GitHub: `GET /repos/{owner}/{repo}/commits?path=<dir>&sha=<scanned commit>&per_page=1`, one request per
+  skill file, at the same time as the files are read; the date is the commit's `committer.date`
+- A local directory: `git -C <directory> log -1 --format='%H %cI' HEAD -- <dir>`
+- A deduplicated skill: the latest date across all its files; its commit is the one of that date
+- Not known (no git, a request that fails, a rate limit, no commit found) → a warning for that file, the scan
+  goes on: `warning: <path>: last updated unknown: <reason>`, e.g. `not a git repository`. The other files of
+  the skill still count; none known → the date is unknown
+- An organization scan does not look them up: one more request per skill file in every repository

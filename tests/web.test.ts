@@ -9,7 +9,10 @@ import { after, test } from 'node:test';
 import cytoscape from 'cytoscape';
 import { allowedTools, type ScanView, type SkillView } from '../src/core/facets.ts';
 import { startServer } from '../src/serve.ts';
-import { AGENT_LOGOS, agentLogo, applyFilters, facetCounts, fromHash, graphElements, groupByAgents, highlight, renderMarkdown, toHash } from '../web/atlas.js';
+import {
+  absoluteTime, AGENT_LOGOS, agentLogo, applyFilters, commitLink, facetCounts, fromHash, graphElements, groupByAgents, highlight, listGroups,
+  relativeTime, renderMarkdown, sortSkills, toHash,
+} from '../web/atlas.js';
 import { CLI, EXAMPLE_COMMIT, FIXTURE, open } from './helpers.ts';
 
 const { server, url } = await startServer({ open, port: 0 });
@@ -202,10 +205,13 @@ test('highlight: every place of every word, case-insensitively, overlaps merged,
   assert.deepEqual(highlight('ab', 'b'), [{ text: 'a', match: false }, { text: 'b', match: true }]);
 });
 
-test('the URL hash keeps the repository, the view and the filters', () => {
-  const state = { repo: 'github.com/a/b', view: 'graph', filters: { ...none, query: 'x y', agent: ['Claude Code', 'GitHub Copilot'], type: ['user only'] } };
+test('the URL hash keeps the repository, the view, the sort and the filters', () => {
+  const state = {
+    repo: 'github.com/a/b', view: 'graph', sort: 'updated',
+    filters: { ...none, query: 'x y', agent: ['Claude Code', 'GitHub Copilot'], type: ['user only'] },
+  };
   assert.deepEqual(fromHash(`#${toHash(state)}`), state);
-  assert.deepEqual(fromHash(''), { repo: '', view: 'list', filters: none });
+  assert.deepEqual(fromHash(''), { repo: '', view: 'list', sort: 'name', filters: none });
   assert.equal(fromHash('view=map').view, 'map');
   assert.equal(fromHash('view=elsewhere').view, 'list');
 });
@@ -257,4 +263,59 @@ test('the sheet\'s Markdown: a safe subset, HTML shown as text', () => {
   assert.equal(renderMarkdown('[x](data:text/html,hi)', base), '<p>[x](data:text/html,hi)</p>');
   // Without a base, a relative link stays text.
   assert.equal(renderMarkdown('[guide](docs/guide.md)'), '<p>[guide](docs/guide.md)</p>');
+});
+
+/** A skill as /api/scan describes it, in the Claude Code root, last updated at `date`. */
+const view = (name: string, description: string, date: string | null) => ({
+  name, description, lastUpdated: date ? { date, commit: date } : null,
+  agents: ['Claude Code'], invocation: 'model and user', tools: [], properties: {}, warnings: [],
+});
+const dated = [
+  view('a', 'old one', '2026-01-01T00:00:00Z'),
+  view('b', 'unknown', null),
+  view('c', 'new one', '2026-10-01T00:00:00Z'),
+  view('d', 'unknown too', null),
+  view('e', 'new one too', '2026-10-01T00:00:00Z'),
+  // 08:00 UTC: after c and e, though its text sorts first.
+  view('f', 'newest', '2026-10-01T09:00:00+01:00'),
+];
+
+test('web sort: by name as scanned; by last update newest first, the same date by name, unknown last', () => {
+  assert.deepEqual(names(sortSkills(dated, 'name')), ['a', 'b', 'c', 'd', 'e', 'f']);
+  assert.deepEqual(names(sortSkills(dated, 'updated')), ['f', 'c', 'e', 'a', 'b', 'd']);
+  // The scan's own list is not reordered.
+  assert.deepEqual(names(dated), ['a', 'b', 'c', 'd', 'e', 'f']);
+});
+
+test('web sort: after the search and the facets, in the same order', () => {
+  const filtered = applyFilters(dated, { ...fromHash('').filters, query: 'one', agent: ['Claude Code'] });
+  assert.deepEqual(names(sortSkills(filtered, 'updated')), ['c', 'e', 'a']);
+  assert.deepEqual(names(applyFilters(dated, { ...fromHash('').filters, agent: ['GitHub Copilot'] })), []);
+});
+
+test('web sort: within each group of the list; the groups and their order stay', () => {
+  const copilot = (name: string, date: string | null) => ({ ...view(name, '', date), agents: ['GitHub Copilot'] });
+  const skills = [...dated, copilot('g', null), copilot('h', '2026-02-01T00:00:00Z'), copilot('i', '2026-03-01T00:00:00Z')];
+  const shown = (sort: string) => listGroups(skills, sort).map(({ agents, skills }) => [agents.join(' + '), names(skills)]);
+  assert.deepEqual(shown('name'), [['Claude Code', ['a', 'b', 'c', 'd', 'e', 'f']], ['GitHub Copilot', ['g', 'h', 'i']]]);
+  // i is newer than a, but stays in its group, after the Claude Code skills.
+  assert.deepEqual(shown('updated'), [['Claude Code', ['f', 'c', 'e', 'a', 'b', 'd']], ['GitHub Copilot', ['i', 'h', 'g']]]);
+});
+
+test('web: `Updated 3 days ago`, in the largest whole unit; the absolute date in UTC; GitHub commits only are links', () => {
+  const now = Date.parse('2026-10-20T12:00:00Z');
+  const ago = (seconds: number) => relativeTime(new Date(now - seconds * 1000).toISOString(), now);
+  assert.equal(ago(30), 'just now');
+  assert.equal(ago(-3600), 'just now'); // a clock behind the committer's
+  assert.equal(ago(60), '1 minute ago');
+  assert.equal(ago(5 * 3600 + 59), '5 hours ago');
+  assert.equal(ago(86_400), '1 day ago');
+  assert.equal(ago(3 * 86_400 + 7200), '3 days ago');
+  assert.equal(ago(29 * 86_400), '29 days ago');
+  assert.equal(ago(65 * 86_400), '2 months ago');
+  assert.equal(ago(800 * 86_400), '2 years ago');
+  assert.equal(absoluteTime('2026-02-10T16:45:30+01:00'), '2026-02-10 15:45 UTC');
+  const github = { url: 'https://github.com/JetBrains/example' };
+  assert.equal(commitLink(github, 'abc'), 'https://github.com/JetBrains/example/commit/abc');
+  assert.equal(commitLink({ url: 'file:///work/fixture' }, 'abc'), undefined);
 });

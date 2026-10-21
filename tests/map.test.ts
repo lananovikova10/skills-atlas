@@ -146,7 +146,7 @@ test('topic filter: a facet once skills have a topic; OR within, AND across; in 
   assert.deepEqual((applyFilters(skills, filters) as typeof skills).map(({ name }) => name), skills.slice(0, 2).map(({ name }) => name));
   assert.deepEqual(counts(skills, filters).topic, [{ value: 'commits · release', count: 3 }, { value: 'review · code', count: 2 }]);
   assert.deepEqual(counts(await fixture(), fromHash('').filters).topic, []);
-  const state = { repo: 'x', view: 'map', filters };
+  const state = { repo: 'x', view: 'map', sort: 'name', filters };
   assert.equal(toHash(state), 'repo=x&view=map&topic=review+%C2%B7+code');
   assert.deepEqual(fromHash(toHash(state)), state);
 });

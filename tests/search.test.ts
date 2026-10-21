@@ -78,7 +78,7 @@ test('search and facets combine with AND; the facet counts follow the search', (
 });
 
 test('search: the query round-trips through the URL hash as q=', () => {
-  const state = { repo: 'github.com/a/b', view: 'list', filters: { ...none, query: 'flag test' } };
+  const state = { repo: 'github.com/a/b', view: 'list', sort: 'name', filters: { ...none, query: 'flag test' } };
   const hash = toHash(state);
   assert.equal(hash, 'repo=github.com%2Fa%2Fb&q=flag+test');
   assert.deepEqual(fromHash(`#${hash}`), state);

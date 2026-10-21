@@ -2,7 +2,7 @@
 // terminal: everything that differs between them comes in through the context.
 import { AtlasError } from './core/errors.ts';
 import { parseOwnerUrl } from './core/github.ts';
-import { skillLink, type Repository, type Skill } from './core/model.ts';
+import { formatDay, skillLink, type Repository, type Skill } from './core/model.ts';
 import type { OwnerScanOptions, OwnerScanResult } from './core/organization.ts';
 import { scan, type Source } from './core/scan.ts';
 
@@ -109,12 +109,13 @@ async function serveCommand(args: string[], context: Context) {
   context.print(`Skill Atlas at ${await context.serve(port)}`);
 }
 
-/** `<owner>/<repo> · N skills`, then each skill's name, first sentence and link. */
+/** `<owner>/<repo> · N skills`, then each skill's name, first sentence, link and last update. */
 function printRepository(repository: Repository, skills: Skill[], context: Context) {
   context.print(`${repository.id} · ${count(skills.length, 'skill')}`);
   for (const skill of skills) {
     context.print(skill.description ? `${skill.name} — ${firstSentence(skill.description)}` : skill.name);
     printLinks(repository, skill, context);
+    context.print(`  updated ${formatDay(skill.lastUpdated)}`);
   }
 }
 

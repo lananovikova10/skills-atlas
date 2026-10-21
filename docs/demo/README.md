@@ -3,9 +3,15 @@
   the new `red-agent` skill and its file link ([spec/analysis.md](../../spec/analysis.md#this-repositorys-red-agent-skill)).
 - [search-filter.mp4](search-filter.mp4): `./skill-atlas serve` on JetBrains/intellij-community: the live search
   (several words, nothing matches, **Clear search**), the graph filtered the same way, a chip AND the search,
-  **Clear filters** ([spec/web.md](../../spec/web.md)). The video of
+  **Clear filters**, a card's hover, then **Sort** by *Last updated* within the agents' group, with the search; every
+  card says when it was last updated
+  ([spec/web.md](../../spec/web.md)). The video of
   [tests/browser/search-filter.spec.ts](../../tests/browser/search-filter.spec.ts): intellij-community at
-  589d822, replayed from a recording of GitHub's answers; `npm run test:browser` records it again
+  589d822, replayed from a recording of GitHub's answers, the page's clock fixed at 2026-10-20 12:00 UTC;
+  `npm run test:browser` records it again
+- [last-updated-cli.mp4](last-updated-cli.mp4): `./skill-atlas scan github.com/JetBrains/android/tree/6c1bcc4…`: each
+  skill's `updated <date>` line, the last commit up to the pin that changed its directory
+  ([spec/cli.md](../../spec/cli.md)). A real run replayed in a terminal
 - [skill-list.mp4](skill-list.mp4): `./skill-atlas serve` on [./fixture](../../fixture): the list grouped by agents,
   each with its logo and count, each card's accent and hover, then the search highlighted in the cards
   (`commit`, with the **Claude Code** chip, then `review pull`) and **Clear filters**

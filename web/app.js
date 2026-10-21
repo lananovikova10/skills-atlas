@@ -1,5 +1,8 @@
 // The page: the repository field, the filters, the list, graph and map views and the skill sheet.
-import { agentColor, agentLogo, applyFilters, FACETS, facetCounts, facetLabel, firstSentence, fromHash, groupByAgents, highlight, renderMarkdown, toHash, TYPES } from './atlas.js';
+import {
+  absoluteTime, agentColor, agentLogo, applyFilters, commitLink, FACETS, facetCounts, facetLabel, firstSentence, fromHash, highlight,
+  listGroups, relativeTime, renderMarkdown, toHash, TYPES,
+} from './atlas.js';
 import { topicColor } from './map.js';
 
 const $ = (id) => document.getElementById(id);
@@ -78,6 +81,8 @@ function update() {
   $('empty-text').textContent = query ? `No skills match "${query}"` : 'No skills match these filters.';
   $('empty-clear').hidden = !query;
   $('list-view').hidden = state.view !== 'list';
+  // The order is the list's: the graph and the map have none.
+  $('sort-field').hidden = state.view !== 'list';
   $('graph-view').hidden = state.view !== 'graph' || shown.length === 0;
   $('map-view').hidden = state.view !== 'map' || shown.length === 0;
   for (const tab of document.querySelectorAll('[data-view]')) tab.setAttribute('aria-selected', String(tab.dataset.view === state.view));
@@ -161,17 +166,31 @@ function skillTags(skill) {
   );
 }
 
+/** `Updated 3 days ago`, the absolute date on hover, linked to the commit on GitHub. */
+function lastUpdated(skill) {
+  const update = skill.lastUpdated;
+  if (!update) return element('span', { class: 'updated' }, 'Last update unknown');
+  const text = `Updated ${relativeTime(update.date)}`;
+  const link = commitLink(state.result.repository, update.commit);
+  const attributes = { class: 'updated', title: absoluteTime(update.date) };
+  return link ? element('a', { ...attributes, href: link, target: '_blank', rel: 'noopener' }, text) : element('span', attributes, text);
+}
+
 function renderList(skills) {
-  $('list-view').replaceChildren(...groupByAgents(skills).map((group) =>
+  // The link is next to the card's button, not in it: a button cannot hold a link.
+  $('list-view').replaceChildren(...listGroups(skills, state.sort).map((group) =>
     element('section', { class: 'skill-group', 'aria-label': group.agents.join(' + ') },
       element('h2', { class: 'group-title' },
         group.agents.flatMap((agent, i) => [i > 0 ? element('span', { class: 'plus' }, '+') : undefined, logo(agent), agent]),
         element('span', { class: 'count' }, String(group.skills.length))),
       element('div', { class: 'skill-grid' }, group.skills.map((skill) =>
-        element('button', { class: 'skill-card', type: 'button', style: `--accent:${agentColor(skill.agents[0])}`, onclick: () => openSheet(skill.id) },
-          element('h3', {}, marked(skill.name)),
-          element('p', {}, skill.description ? marked(firstSentence(skill.description)) : 'No description'),
-          skillTags(skill),
+        element('div', { class: 'skill-item' },
+          element('button', { class: 'skill-card', type: 'button', style: `--accent:${agentColor(skill.agents[0])}`, onclick: () => openSheet(skill.id) },
+            element('h3', {}, marked(skill.name)),
+            element('p', {}, skill.description ? marked(firstSentence(skill.description)) : 'No description'),
+            skillTags(skill),
+          ),
+          lastUpdated(skill),
         ),
       )),
     ),
@@ -228,6 +247,7 @@ function openSheet(id) {
     element('p', { class: 'description' }, skill.description || 'No description'),
     element('h4', {}, 'Overview'),
     skillTags(skill),
+    element('p', { class: 'sheet-updated' }, lastUpdated(skill)),
     element('h4', {}, 'Front matter'),
     element('table', { class: 'props' }, element('tbody', {},
       element('tr', {}, element('th', {}, 'name'), element('td', {}, skill.name)),
@@ -291,6 +311,10 @@ $('search').addEventListener('keydown', (event) => {
   setQuery('');
 });
 $('search-clear').addEventListener('click', clearSearch);
+$('sort').addEventListener('change', () => {
+  state.sort = $('sort').value;
+  update();
+});
 $('empty-clear').addEventListener('click', clearSearch);
 $('clear-filters').addEventListener('click', () => {
   state.filters = fromHash('').filters;
@@ -326,5 +350,6 @@ function isTyping(target) {
 
 $('repo').value = state.repo;
 $('search').value = state.filters.query;
+$('sort').value = state.sort;
 for (const tab of document.querySelectorAll('[data-view]')) tab.setAttribute('aria-selected', String(tab.dataset.view === state.view));
 if (state.repo) analyse(state.repo);

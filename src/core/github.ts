@@ -1,5 +1,6 @@
 import { AtlasError, EmptyRepositoryError, RateLimitError } from './errors.ts';
 import { SKILL_ROOTS } from './find.ts';
+import type { LastUpdated } from './model.ts';
 import type { Source } from './scan.ts';
 
 /** The part of `fetch` the core uses, so tests and the browser can pass their own. */
@@ -104,7 +105,16 @@ export async function openGitHub(input: string, options: GitHubOptions): Promise
     paths,
     warnings,
     read: (path) => github.file(id, sha, path),
+    lastUpdated: (directory) => lastCommit(github, id, sha, directory),
   };
+}
+
+/** The most recent commit up to `sha` that changed the directory: one request, the newest commit only. */
+async function lastCommit(github: Client, id: string, sha: string, directory: string): Promise<LastUpdated | undefined> {
+  const [last] = await github.json<{ sha: string; commit: { committer: { date: string } } }[]>(
+    `${API}/repos/${id}/commits?path=${encodePath(directory)}&sha=${sha}&per_page=1`,
+  );
+  return last && { date: last.commit.committer.date, commit: last.sha };
 }
 
 /**
