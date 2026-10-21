@@ -8,6 +8,7 @@ import { registerHooks } from 'node:module';
 import { after, beforeEach, test } from 'node:test';
 import { GlobalRegistrator } from '@happy-dom/global-registrator';
 import { startServer } from '../src/serve.ts';
+import { AGENT_COLORS, AGENT_LOGOS } from '../web/atlas.js';
 import { FIXTURE, open } from './helpers.ts';
 
 const CYTOSCAPE_STUB = `data:text/javascript,${encodeURIComponent(`
@@ -40,7 +41,8 @@ const page = (await readFile(new URL('../web/index.html', import.meta.url), 'utf
 const app = new URL('../web/app.js', import.meta.url).href;
 let loads = 0;
 
-const ALL = ['code-review', 'code-style', 'commits', 'release-checklist', 'writing-lint-checks'];
+// In the list's order: grouped by agents (Claude Code; all three; Codex; GitHub Copilot; Custom agent).
+const ALL = ['code-review', 'commits', 'release-checklist', 'code-style', 'writing-lint-checks'];
 const hash = (query: string) => `#repo=${encodeURIComponent(FIXTURE)}${query}`;
 
 /** Opens the page at `#<hash>`, as a reload or a shared link does, and waits for its scan. */
@@ -103,9 +105,9 @@ test('page: typing filters the list on every keystroke, without Enter', () => {
   // `c` is in every name; `co` and `com` also match "committing" in code-style's description.
   assert.deepEqual(shown, [
     ALL,
-    ['code-review', 'code-style', 'commits'],
-    ['code-style', 'commits'],
-    ['code-style', 'commits'],
+    ['code-review', 'commits', 'code-style'],
+    ['commits', 'code-style'],
+    ['commits', 'code-style'],
   ]);
   assert.equal($('summary-text').textContent, 'Showing 2 of 5 skills');
 });
@@ -279,7 +281,7 @@ test('page: Analyse sends the token to the scan; never in the URL hash', async (
   assert.ok(!location.hash.includes('ghp_secret'), location.hash);
   assert.ok(!location.href.includes('ghp_secret'), location.href);
   assert.equal(location.hash, hash('&q=commit'));
-  assert.deepEqual(listed(), ['code-style', 'commits']);
+  assert.deepEqual(listed(), ['commits', 'code-style']);
   assert.equal($('token').value, ' ghp_secret ');
 });
 
@@ -297,4 +299,82 @@ test('page: nothing is stored: a reload forgets the token and scans without one'
   assert.deepEqual(tokens, [undefined]);
   assert.equal(localStorage.length, 0);
   assert.equal(sessionStorage.length, 0);
+});
+
+/** The list's groups: title (its text) → the names of its cards. */
+const groups = () => [...document.querySelectorAll('#list-view .skill-group')].map((group) => [
+  group.querySelector('.group-title')?.textContent,
+  [...group.querySelectorAll('.skill-card h3')].map((title) => title.textContent),
+]);
+
+/** The agents whose logos an element shows, by their path, and in which color. */
+const logos = (element: Element) => [...element.querySelectorAll('svg.logo')].map((svg) => {
+  const d = svg.querySelector('path')?.getAttribute('d');
+  return [Object.keys(AGENT_LOGOS).find((agent) => AGENT_LOGOS[agent as keyof typeof AGENT_LOGOS] === d), svg.getAttribute('style')];
+});
+
+const card = (name: string) => [...document.querySelectorAll('#list-view .skill-card')].find((element) => element.querySelector('h3')?.textContent === name) as HTMLElement;
+
+/** A card's highlighted parts: the text of each <mark> in its name and in its description. */
+const marks = (name: string) => [...card(name).querySelectorAll('h3 mark, p mark')].map((mark) => mark.textContent);
+
+test('page: the list is grouped by agents, in root order, each skill in one group, with a count', () => {
+  assert.deepEqual(groups(), [
+    ['Claude Code1', ['code-review']],
+    ['Claude Code+Codex / AGENTS.md+GitHub Copilot1', ['commits']],
+    ['Codex / AGENTS.md1', ['release-checklist']],
+    ['GitHub Copilot1', ['code-style']],
+    ['Custom agent1', ['writing-lint-checks']],
+  ]);
+  const titles = [...document.querySelectorAll('#list-view .group-title')];
+  assert.deepEqual([...titles[1].querySelectorAll('.plus')].map((plus) => plus.textContent), ['+', '+']);
+  assert.deepEqual([...document.querySelectorAll('#list-view .group-title .count')].map((count) => count.textContent), ['1', '1', '1', '1', '1']);
+  assert.equal(document.querySelectorAll('#list-view .skill-card').length, 5);
+});
+
+test('page: the groups follow the search and the chips; a group with no skill is not shown', () => {
+  type('commit');
+  assert.deepEqual(groups(), [
+    ['Claude Code+Codex / AGENTS.md+GitHub Copilot1', ['commits']],
+    ['GitHub Copilot1', ['code-style']],
+  ]);
+  chips('Agent').get('Claude Code')?.element.click();
+  assert.deepEqual(groups(), [['Claude Code+Codex / AGENTS.md+GitHub Copilot1', ['commits']]]);
+  type('zzz');
+  assert.equal(document.querySelectorAll('#list-view .skill-group').length, 0);
+});
+
+test('page: each agent has its logo, in its color: group titles, cards, Agent chips, the sheet', () => {
+  const color = (agent: keyof typeof AGENT_COLORS) => `color:${AGENT_COLORS[agent]}`;
+  const all = [['Claude Code', color('Claude Code')], ['Codex / AGENTS.md', color('Codex / AGENTS.md')], ['GitHub Copilot', color('GitHub Copilot')]];
+  const titles = [...document.querySelectorAll('#list-view .group-title')];
+  assert.deepEqual(logos(titles[1]), all);
+  // The custom agent's logo is the one for any other agent.
+  assert.deepEqual(logos(titles[4]), [['other', color('Custom agent')]]);
+  assert.deepEqual(logos(card('commits').querySelector('.tags') as Element), all);
+  assert.deepEqual(logos(chips('Agent').get('GitHub Copilot')?.element as Element), [['GitHub Copilot', color('GitHub Copilot')]]);
+  card('commits').click();
+  assert.deepEqual(logos($('sheet-body').querySelector('.files') as Element), all);
+});
+
+test('page: a card\'s accent is its canonical agent\'s color', () => {
+  assert.equal(card('commits').style.getPropertyValue('--accent'), AGENT_COLORS['Claude Code']);
+  assert.equal(card('code-style').style.getPropertyValue('--accent'), AGENT_COLORS['GitHub Copilot']);
+  assert.equal(card('writing-lint-checks').style.getPropertyValue('--accent'), AGENT_COLORS['Custom agent']);
+});
+
+test('page: the search\'s words are highlighted in the name and the description, as typed and cleared', () => {
+  assert.deepEqual(marks('commits'), []);
+  type('COMM');
+  // Every place, in either field; the text keeps its case.
+  assert.deepEqual(marks('commits'), ['comm', 'comm']);
+  assert.equal(card('commits').querySelector('h3')?.innerHTML, '<mark>comm</mark>its');
+  assert.equal(card('code-style').querySelector('h3')?.innerHTML, 'code-style');
+  $('search').value = '';
+  type(' pull  review ');
+  assert.equal(card('code-review').querySelector('h3')?.innerHTML, 'code-<mark>review</mark>');
+  // Only what the card shows: "pull" is in the description's second sentence, not on the card.
+  assert.equal(card('code-review').querySelector('p')?.innerHTML, '<mark>Review</mark> a change before it is merged.');
+  press($('search'), 'Escape');
+  assert.equal(document.querySelectorAll('#list-view mark').length, 0);
 });

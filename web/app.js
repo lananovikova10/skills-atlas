@@ -1,5 +1,5 @@
 // The page: the repository field, the filters, the list and graph views and the skill sheet.
-import { agentColor, applyFilters, FACETS, facetCounts, facetLabel, firstSentence, fromHash, renderMarkdown, toHash, TYPES } from './atlas.js';
+import { agentColor, agentLogo, applyFilters, FACETS, facetCounts, facetLabel, firstSentence, fromHash, groupByAgents, highlight, renderMarkdown, toHash, TYPES } from './atlas.js';
 
 const $ = (id) => document.getElementById(id);
 // The token is kept here only: never in the hash, never stored.
@@ -91,7 +91,7 @@ function renderFacets(skills) {
               update();
             },
           },
-          key === 'agent' ? element('span', { class: 'dot', style: `width:8px;height:8px;border-radius:50%;background:${agentColor(value)}` }) : undefined,
+          key === 'agent' ? logo(value) : undefined,
           facetLabel(key, value), element('span', { class: 'count' }, String(count)));
         }),
       )),
@@ -99,9 +99,25 @@ function renderFacets(skills) {
   );
 }
 
+/** The agent's logo, in its color. */
+function logo(agent) {
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('class', 'logo');
+  svg.setAttribute('aria-hidden', 'true');
+  svg.setAttribute('style', `color:${agentColor(agent)}`);
+  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  path.setAttribute('d', agentLogo(agent));
+  svg.append(path);
+  return svg;
+}
+
+/** The text, with the search's words in it marked. */
+const marked = (text) => highlight(text, state.filters.query).map(({ text, match }) => (match ? element('mark', {}, text) : text));
+
 function skillTags(skill) {
   return element('div', { class: 'tags' },
-    skill.agents.map((agent) => element('span', { class: 'tag' }, element('span', { class: 'dot', style: `background:${agentColor(agent)}` }), agent)),
+    skill.agents.map((agent) => element('span', { class: 'tag' }, logo(agent), agent)),
     element('span', { class: 'tag type' }, TYPES[skill.invocation]),
     skill.tools.length ? element('span', { class: 'tag type' }, `${skill.tools.length} allowed tools`) : undefined,
     skill.warnings.length ? element('span', { class: 'tag warn' }, `${skill.warnings.length} ${skill.warnings.length === 1 ? 'warning' : 'warnings'}`) : undefined,
@@ -109,11 +125,18 @@ function skillTags(skill) {
 }
 
 function renderList(skills) {
-  $('list-view').replaceChildren(...skills.map((skill) =>
-    element('button', { class: 'skill-card', type: 'button', onclick: () => openSheet(skill.id) },
-      element('h3', {}, skill.name),
-      element('p', {}, skill.description ? firstSentence(skill.description) : 'No description'),
-      skillTags(skill),
+  $('list-view').replaceChildren(...groupByAgents(skills).map((group) =>
+    element('section', { class: 'skill-group', 'aria-label': group.agents.join(' + ') },
+      element('h2', { class: 'group-title' },
+        group.agents.flatMap((agent, i) => [i > 0 ? element('span', { class: 'plus' }, '+') : undefined, logo(agent), agent]),
+        element('span', { class: 'count' }, String(group.skills.length))),
+      element('div', { class: 'skill-grid' }, group.skills.map((skill) =>
+        element('button', { class: 'skill-card', type: 'button', style: `--accent:${agentColor(skill.agents[0])}`, onclick: () => openSheet(skill.id) },
+          element('h3', {}, marked(skill.name)),
+          element('p', {}, skill.description ? marked(firstSentence(skill.description)) : 'No description'),
+          skillTags(skill),
+        ),
+      )),
     ),
   ));
 }
@@ -157,7 +180,7 @@ function openSheet(id) {
     element('ul', { class: 'files' }, skill.files.map((file) =>
       element('li', {},
         element('a', { href: file.link, target: '_blank', rel: 'noopener' }, file.path),
-        element('span', { class: 'tag' }, element('span', { class: 'dot', style: `background:${agentColor(file.agent)}` }), file.agent),
+        element('span', { class: 'tag' }, logo(file.agent), file.agent),
       ),
     )),
     skill.warnings.length ? [element('h4', {}, 'Warnings'), element('ul', {}, skill.warnings.map((text) => element('li', {}, text)))] : undefined,

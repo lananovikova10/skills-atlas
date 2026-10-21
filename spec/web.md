@@ -58,11 +58,25 @@ From the front matter, by who can invoke the skill:
 - A **Repository** field and **Analyse**; the summary: `owner/repo`, `N skills`, the short commit,
   `N warnings · N ignored` (they open the stderr lines of the CLI)
 - Two views, switched in the top bar, both filtered the same way:
-  - **List**: a card per skill: name, the description's first sentence, agents, type, warnings
+  - **List**: a card per skill, grouped by agent, see [List](#list)
   - **Graph** (Cytoscape): the repository → its agents → their skills, colored by canonical agent;
     switches add the **allowed tools** and **front matter keys** as nodes shared by skills
 - Clicking a skill (card or node) opens its sheet: the full description, every front matter key,
   its files with agent and link, its warnings, its content (Markdown; HTML is shown as text)
+## List
+- Grouped by **agent**: a group per set of agents the skills are in, so each skill is in one group. The agents
+  in root order ([Agents](#agents)), and the groups in that order too, a set before the longer ones it starts:
+  *Claude Code*, *Claude Code + Codex / AGENTS.md*, *Codex / AGENTS.md*, …; in a group, the skills by name
+- A group's title: each agent's logo and name, joined by `+`, and how many skills it shows; a group with none
+  is not shown
+- A card: name, the description's first sentence, agents, type, warnings
+- Each agent has a **logo**, in its color: Claude Code and GitHub Copilot their own marks (simple-icons);
+  Codex / AGENTS.md a terminal; any other agent a robot. On the group titles, the cards, the **Agent** chips and
+  the sheet's files
+- A card's **accent**, a bar on its left: the color of its canonical agent, as in the graph
+- Hover or keyboard focus: the card rises, and its border and background take its accent
+- The search's words are **highlighted** in the card's name and description, as the card shows them: every
+  place each word is, case-insensitively; the text keeps its case
 ## Filters
 - **Search**: live, over the scan already shown: no submit, no re-scan
 - Chips: **Agent**, **Type**, **Allowed tools**, **Front matter** (key present), **Other**:
@@ -81,5 +95,6 @@ From the front matter, by who can invoke the skill:
   chips alone that match nothing (from a link): *No skills match these filters.*
 - Cleared by the **✕** in the field, by `Esc` in the field, and with the chips by **Clear filters**
 - `q=` in the URL hash, next to `repo=`; analysing another repository keeps it
+- **List**: the matches are highlighted, see [List](#list)
 - **Graph**: the skills that do not match are hidden, as with the chips
 - `/` focuses the field, unless focus is already in a text field
