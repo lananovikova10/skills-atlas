@@ -75,8 +75,8 @@ test('the demo: the map of the skills, a topic, the search on the map, similar s
     const similar = page.locator('#sheet-body .similar button');
     await expect(similar).toHaveText(['testing', 'driver-ui-tests', 'code-style', 'testing-internals', 'commits']);
     await page.locator('#sheet-body h4', { hasText: 'Similar skills' }).scrollIntoViewIfNeeded();
-    // The sheet's content only: its rounded corner, on a layer that slid in, is drawn one of two ways.
-    await expect(page.locator('#sheet-body')).toHaveScreenshot('04-similar-skills.png');
+    // The list only: the sheet around it, a layer that slid in and scrolls, is not drawn the same every time.
+    await expect(page.locator('#sheet-body .similar')).toHaveScreenshot('04-similar-skills.png');
     await watch(2500);
     await similar.first().click();
     await expect(page.locator('#sheet-title')).toHaveText('testing');
