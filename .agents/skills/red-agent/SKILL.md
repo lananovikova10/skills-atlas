@@ -135,8 +135,8 @@ App commit `<sha>` · Chromium <version> · viewport <w×h> · mocked API: yes/n
 
 **Exceptions to the label:**
 
-- Security bugs (XSS, token leaks): file with `bug` and `security` but **without** `Delegated to AI`, and leave out a working exploit payload. A human decides.
-- Bugs needing a product decision (the spec is silent or contradictory): file without `Delegated to AI` and state what needs deciding.
+- Security bugs (XSS, token leaks): file with `bug`, `red-agent`, and `security` but **without** `Delegated to AI`, and leave out a working exploit payload. A human decides.
+- Bugs needing a product decision (the spec is silent or contradictory): file with `bug` and `red-agent`, without `Delegated to AI`, and state what needs deciding.
 
 ## 9. Limits and guardrails
 
